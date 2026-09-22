@@ -756,33 +756,6 @@ body.scrolled .hero-cue {
     max-width: 12ch;
     font-size: clamp(2.1rem, 9vw, 2.9rem);
   }
-
-
-  .hero-foot {
-    width: 100%;
-  }
-
-  .chapters {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 18px 14px;
-  }
-
-  .chip {
-    gap: 4px;
-  }
-
-  .chip-num {
-    font-size: clamp(22px, 7.4vw, 30px);
-  }
-
-  .chip-tx {
-    position: static;
-    width: auto;
-    height: auto;
-    overflow: visible;
-    clip-path: none;
-    white-space: normal;
-  }
 }
 
 body.still-shot .nav,
@@ -1226,10 +1199,9 @@ html {
   }
 }
 
-/* Phones and other tall, narrow screens (portrait tablets, narrow windows):
-   the cue becomes a dark pill closing the first screen and the chapters a
-   list on a dark panel below the fold. Landscape desktop keeps the strip. */
-@media (max-width: 600px), (max-aspect-ratio: 85/100) and (max-width: 900px) {
+/* Phones: the cue becomes a dark pill closing the first screen and the chapters
+   a list on a dark panel below the fold. Tablets and desktop keep the strip. */
+@media (max-width: 600px) {
   /* A grid whose first row fills the first screen: the heading sits at its top,
      the cue closes it, and the chapter list is the next row down. The heading
      keeps its own short box, so its shade doesn't stretch over the scene. */
@@ -1299,6 +1271,15 @@ html {
     font-size: 24px;
     color: var(--lamp);
     text-shadow: none;
+  }
+
+  .chip-tx {
+    position: static;
+    width: auto;
+    height: auto;
+    overflow: visible;
+    clip-path: none;
+    white-space: normal;
   }
 
   .chip-tx b {
