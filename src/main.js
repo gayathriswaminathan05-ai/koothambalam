@@ -241,3 +241,12 @@ function mountForeground() {
 }
 
 mountForeground();
+
+// "Scroll to enter" has done its job once the walk starts: dissolve it, bring it back at the top.
+function mountScrollCue() {
+  const sync = () => document.body.classList.toggle("scrolled", window.scrollY > 40);
+  window.addEventListener("scroll", sync, { passive: true });
+  sync();
+}
+
+mountScrollCue();
