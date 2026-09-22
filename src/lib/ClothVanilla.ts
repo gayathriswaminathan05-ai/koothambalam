@@ -507,9 +507,11 @@ export function createCloth(
   const title = lab?.querySelector("b");
   const script = lab?.querySelector("[lang], span");
   const lede = lab?.querySelector(".card-lede");
-  const titleSize = Math.round(Math.min(42, Math.max(22, cssW * 0.036)));
-  const scriptSize = Math.round(Math.min(28, Math.max(16, cssW * 0.028)));
-  const ledeSize = Math.round(Math.min(16, Math.max(12, cssW * 0.014)));
+  // On phones the canvas-drawn copy gets higher size floors so it stays readable (desktop is unchanged).
+  const narrow = window.innerWidth <= 600;
+  const titleSize = Math.round(Math.min(42, Math.max(narrow ? 26 : 22, cssW * 0.036)));
+  const scriptSize = Math.round(Math.min(28, Math.max(narrow ? 19 : 16, cssW * 0.028)));
+  const ledeSize = Math.round(Math.min(16, Math.max(narrow ? 14.5 : 12, cssW * 0.014)));
   const ink = onPaper
     ? { lede: "#0c0f11", title: "#050607", script: "#5a2806" }
     : { lede: "rgba(154, 144, 128, 0.92)", title: "#f2ebe0", script: "#e8a030" };
@@ -541,10 +543,11 @@ export function createCloth(
     // Art card: the whole illustration stays inside the frame (contain, never cover),
     // printed onto the paper with multiply so its white ground drops out.
     const wide = cssW / cssH > 1.15;
+    const artShare = narrow ? 0.48 : 0.56;
     const inset = Math.max(14, Math.min(cssW, cssH) * 0.06);
     const box = wide
       ? { x: cssW * 0.46, y: inset, w: cssW * 0.54 - inset * 0.6, h: cssH - inset * 2 }
-      : { x: inset, y: inset, w: cssW - inset * 2, h: cssH * 0.56 - inset };
+      : { x: inset, y: inset, w: cssW - inset * 2, h: cssH * artShare - inset };
     const s = Math.min(box.w / art.naturalWidth, box.h / art.naturalHeight);
     const aw = art.naturalWidth * s;
     const ah = art.naturalHeight * s;
@@ -554,10 +557,10 @@ export function createCloth(
     ctx.restore();
 
     const textW = wide ? cssW * 0.46 - padX * 1.3 : cssW - padX * 2;
-    const small = Math.round(Math.min(18, Math.max(11.5, cssW * 0.0215)));
-    const lineH = Math.round(small * 1.55);
-    const bigTitle = Math.round(Math.min(64, Math.max(20, cssW * 0.052)));
-    let ty = wide ? padY + scriptSize * 0.2 : cssH * 0.56 + padY * 0.2;
+    const small = Math.round(Math.min(18, Math.max(narrow ? 14.5 : 11.5, cssW * 0.0215)));
+    const lineH = Math.round(small * 1.5);
+    const bigTitle = Math.round(Math.min(64, Math.max(narrow ? 26 : 20, cssW * 0.052)));
+    let ty = wide ? padY + scriptSize * 0.2 : cssH * artShare + padY * 0.1;
     if (script?.textContent) {
       ctx.fillStyle = ink.script;
       ctx.font = `400 ${scriptSize}px "Malayalam Sangam MN", "Noto Sans Malayalam", sans-serif`;
@@ -588,7 +591,7 @@ export function createCloth(
 
   const y = cssH - padY;
   ctx.font = `300 ${ledeSize}px Onest, system-ui, sans-serif`;
-  const ledeLines = lede?.textContent ? wrap(lede.textContent, cssW - padX * 2, artTop ? 4 : 3) : [];
+  const ledeLines = lede?.textContent ? wrap(lede.textContent, cssW - padX * 2, artTop ? (narrow ? 6 : 4) : 3) : [];
   const ledeStep = ledeSize + 5;
   const ledeTop = y - titleSize - 16 - (ledeLines.length - 1) * ledeStep;
   if (art && art.naturalWidth && artTop) {

@@ -488,18 +488,6 @@ body {
   }
 }
 
-@media (max-width: 720px) {
-  .fg-bush {
-    left: -18%;
-    width: 78vw;
-  }
-
-  .fg-tree {
-    right: -16%;
-    width: 52vw;
-  }
-}
-
 @media (prefers-reduced-motion: reduce) {
   .fg-el--sway > img {
     animation: none;
@@ -1139,6 +1127,18 @@ html {
   color: var(--muted) !important;
 }
 
+@media (max-width: 720px) {
+  .fg-bush {
+    left: -18%;
+    width: 78vw;
+  }
+
+  .fg-tree {
+    right: -16%;
+    width: 52vw;
+  }
+}
+
 @media (max-width: 900px) {
   .cards {
     grid-template-columns: 1fr;
@@ -1158,6 +1158,151 @@ html {
     max-width: 20ch;
   }
 }
+
+/* Phones: nothing below ~11px, the dim label greys lifted, and the cards tall
+   enough that their canvas-drawn text can be set at a readable size. */
+@media (max-width: 600px) {
+  .brand-tx strong {
+    font-size: 12.5px;
+  }
+
+  .brand-tx > span {
+    font-size: 9.5px;
+    letter-spacing: 0.24em;
+    color: var(--bone-dim);
+    text-shadow: 0 1px 10px rgb(3 6 8 / 0.9);
+  }
+
+  .hero-kicker {
+    font-size: 11.5px;
+  }
+
+  .hero-sub {
+    max-width: 34ch;
+    font-size: 15px;
+  }
+
+  /* First screen holds the heading and the cue; the chapter list follows below the fold. */
+  /* A grid whose first row fills the first screen: the heading sits at its top,
+     the cue closes it, and the chapter list is the next row down. The heading
+     keeps its own short box, so its shade doesn't stretch over the scene. */
+  .hero {
+    display: grid;
+    grid-template-rows: minmax(calc(100svh - 88px - 88px - env(safe-area-inset-top, 0px)), auto) auto auto;
+    align-content: start;
+    height: auto;
+    padding-bottom: calc(48px + env(safe-area-inset-bottom, 0px));
+  }
+
+  .hero-copy {
+    align-self: start;
+  }
+
+  .hero-foot {
+    display: contents;
+  }
+
+  /* the cue becomes a dark pill centred at the foot of the first screen */
+  .hero-cue {
+    justify-content: center;
+    width: max-content;
+    margin: 0 auto 28px;
+    padding: 12px 18px 12px 20px;
+    border: 1px solid rgb(232 224 208 / 0.14);
+    border-radius: 999px;
+    background: rgb(5 9 12 / 0.62);
+    -webkit-backdrop-filter: blur(8px);
+    backdrop-filter: blur(8px);
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.22em;
+    color: var(--bone);
+  }
+
+  .hero-cue-track {
+    width: 44px;
+  }
+
+  /* chapters: a vertical list on a dark band, number · name · one-line description */
+  .chapters {
+    grid-template-columns: 1fr;
+    gap: 0;
+    padding: 6px 18px;
+    border: 1px solid rgb(232 224 208 / 0.1);
+    border-radius: 16px;
+    background: rgb(5 9 12 / 0.7);
+    -webkit-backdrop-filter: blur(8px);
+    backdrop-filter: blur(8px);
+  }
+
+  .chip {
+    display: grid;
+    grid-template-columns: 46px 1fr;
+    align-items: baseline;
+    gap: 0;
+    padding: 14px 0;
+  }
+
+  .chip + .chip {
+    border-top: 1px solid rgb(232 224 208 / 0.08);
+  }
+
+  .chip-num {
+    font-size: 24px;
+    color: var(--lamp);
+    text-shadow: none;
+  }
+
+  .chip-tx b {
+    margin: 0 0 4px;
+    font-size: 12.5px;
+    letter-spacing: 0.16em;
+    color: var(--bone);
+    text-shadow: none;
+  }
+
+  .chip-tx em {
+    position: static;
+    width: auto;
+    height: auto;
+    overflow: visible;
+    clip-path: none;
+    white-space: normal;
+    display: block;
+    font-size: 14px;
+    line-height: 1.45;
+    color: rgb(232 224 208 / 0.78);
+  }
+
+  .card,
+  .card--lg {
+    height: clamp(460px, 132vw, 580px);
+  }
+
+  .afterlight p {
+    font-size: 16px;
+  }
+
+  .after-brand {
+    font-size: 11px !important;
+    color: var(--bone-dim) !important;
+    letter-spacing: 0.16em;
+  }
+
+  /* foliage stays a frame, not a curtain: small enough to leave card text clear */
+  .fg-bush {
+    left: -24%;
+    bottom: -26px;
+    width: 58vw;
+  }
+
+  .fg-tree {
+    right: -20%;
+    bottom: -30px;
+    width: 38vw;
+  }
+}
+
 
 @media (prefers-reduced-motion: reduce) {
   * {
