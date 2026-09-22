@@ -58,6 +58,7 @@ export function loadTexture(THREE, src) {
       resolve({ texture, missing: false });
     };
     image.onerror = () => reject(new Error(src));
-    image.src = src;
+    // layer paths are written from the site root; prefix the deploy base (e.g. /koothambalam/ on GitHub Pages)
+    image.src = src.startsWith("/") ? import.meta.env.BASE_URL + src.slice(1) : src;
   });
 }
