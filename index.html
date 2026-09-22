@@ -1,0 +1,150 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <title>Koothambalam</title>
+    <link rel="icon" type="image/svg+xml" href="/assets/kerala-temple/ui/mark.svg" />
+    <link rel="preload" href="/fonts/onest-600.woff2" as="font" type="font/woff2" crossorigin />
+  </head>
+  <body id="top">
+    <div class="sky-clouds" aria-hidden="true">
+      <canvas id="clouds-source"></canvas>
+      <div id="clouds-content"></div>
+      <canvas id="clouds-output"></canvas>
+      <div class="sky-moon-wrap">
+        <img class="sky-moon" src="/assets/kerala-temple/background/moon.webp?v=5" alt="" />
+      </div>
+    </div>
+    <canvas id="world" aria-hidden="true"></canvas>
+    <div class="grain" aria-hidden="true"></div>
+    <header class="nav" id="nav">
+      <a class="site-brand" href="#top" aria-label="Koothambalam, back to top">
+        <img class="brand-mark" src="/assets/kerala-temple/ui/mark.svg" alt="" width="34" height="34" />
+        <span class="brand-tx">
+          <strong>KOOTHAMBALAM</strong>
+          <span>SACRED SPACES OF KERALA</span>
+        </span>
+      </a>
+      <nav class="nav-links" id="nav-links" aria-label="Cards">
+        <a class="nav-link" href="#card-kathakali" data-card="card-kathakali"><span>Kathakali</span><span class="alt" lang="ml" aria-hidden="true">കഥകളി</span></a>
+        <a class="nav-link" href="#card-gopuram" data-card="card-gopuram"><span>Gopuram</span><span class="alt" lang="ml" aria-hidden="true">ഗോപുരം</span></a>
+        <a class="nav-link" href="#card-vilakku" data-card="card-vilakku"><span>Vilakku</span><span class="alt" lang="ml" aria-hidden="true">വിളക്ക്</span></a>
+      </nav>
+      <button class="nav-burger" type="button" aria-label="Menu" aria-controls="nav-links" aria-expanded="false"><i></i><i></i></button>
+    </header>
+
+    <div class="scroll-track" id="walk-track">
+      <section class="hero" id="hero">
+        <div class="hero-copy">
+          <p class="hero-kicker">Chapter 00 — Approach</p>
+          <h1 class="hero-title">From the temple pond into sacred ground.</h1>
+          <p class="hero-sub">
+            Enter a Kerala temple at night, where water, timber, and lamps
+            kept burning hold the stories of the gods.
+          </p>
+        </div>
+        <div class="hero-foot">
+          <p class="hero-cue"><span>Scroll to enter</span><span class="hero-cue-track" aria-hidden="true"><i></i></span></p>
+          <ol class="chapters">
+            <li class="chip">
+              <span class="chip-num">01</span>
+              <span class="chip-tx"><b>Pond</b><em>The kalyani, where you wash before entering.</em></span>
+            </li>
+            <li class="chip">
+              <span class="chip-num">02</span>
+              <span class="chip-tx"><b>Gopuram</b><em>The gateway into sacred ground.</em></span>
+            </li>
+            <li class="chip">
+              <span class="chip-num">03</span>
+              <span class="chip-tx"><b>Kathakali</b><em>Stories of gods and goddesses, danced till dawn.</em></span>
+            </li>
+            <li class="chip">
+              <span class="chip-num">04</span>
+              <span class="chip-tx"><b>Rangam</b><em>Where dance is offered as devotion.</em></span>
+            </li>
+          </ol>
+        </div>
+      </section>
+    </div>
+    <div class="cur-dot" id="cursor" aria-hidden="true"></div>
+
+    <main class="after-walk" id="after-walk">
+      <p class="board-kicker">The long climb</p>
+      <div class="cards" id="cards">
+        <article id="card-kathakali" class="card card--art card--art-top" data-cloth>
+          <div class="card-fr">
+            <canvas class="cloth-source" layoutsubtree="true"></canvas>
+            <div class="cloth-content">
+              <img class="card-art" src="/assets/kerala-temple/characters/kathakali-troupe.png" alt="Kathakali dancers in green-faced and red-bearded costume, ringed by drummers and a seated audience" />
+              <div class="card-lab">
+                <p class="card-lede">An offering to the gods: painted faces and towering crowns tell stories of gods and goddesses from the Ramayana, Mahabharata and Puranas, from dusk until dawn.</p>
+                <div class="card-lab-row">
+                  <b>Kathakali</b>
+                  <span lang="ml">കഥകളി</span>
+                </div>
+              </div>
+            </div>
+            <canvas class="cloth-output" aria-hidden="true"></canvas>
+          </div>
+        </article>
+
+        <article id="card-gopuram" class="card card--lg card--art" data-cloth>
+          <div class="card-fr">
+            <canvas class="cloth-source" layoutsubtree="true"></canvas>
+            <div class="cloth-content">
+              <img class="card-art" src="/assets/kerala-temple/architecture/gopuram-card.webp" alt="Painted Kerala gopuram: tiered copper-tiled roofs over a carved timber gateway" />
+              <div class="card-lab">
+                <p class="card-lede">The gopuram is the gateway tower that marks the start of sacred ground. In Kerala it is built of timber and laterite under tiers of sloping copper-tiled roofs, with carved gables and a threshold you step over, never on.</p>
+                <div class="card-lab-row">
+                  <b>Gopuram</b>
+                  <span lang="ml">ഗോപുരം</span>
+                </div>
+              </div>
+            </div>
+            <canvas class="cloth-output" aria-hidden="true"></canvas>
+          </div>
+        </article>
+
+        <article id="card-vilakku" class="card card--art" data-cloth>
+          <div class="card-fr">
+            <canvas class="cloth-source" layoutsubtree="true"></canvas>
+            <div class="cloth-content">
+              <img class="card-art" src="/assets/kerala-temple/architecture/vilakku.webp" alt="Painted brass deepastambham lamp tower, every tier lit, on a laterite base before a timber temple wall lined with oil lamps" />
+              <div class="card-lab">
+                <p class="card-lede">The deepastambham, a tiered brass lamp tower, is lit at dusk. Every wick is a small offering to the deity.</p>
+                <div class="card-lab-row">
+                  <b>Vilakku</b>
+                  <span lang="ml">വിളക്ക്</span>
+                </div>
+              </div>
+            </div>
+            <canvas class="cloth-output" aria-hidden="true"></canvas>
+          </div>
+        </article>
+      </div>
+
+      <footer class="afterlight">
+        <img class="after-mark" src="/assets/kerala-temple/ui/mark.svg" alt="" width="56" height="56" />
+        <div class="afterlight-body">
+        <h2>Afterlight</h2>
+        <p>
+          The temple does not close behind you. The pond, the gateway, and the
+          sanctum are still there when the noise gets loud. Same path.
+          Different lamps.
+        </p>
+        <p class="after-brand">KOOTHAMBALAM · SACRED SPACES OF KERALA</p>
+        </div>
+      </footer>
+    </main>
+    <div class="fg" id="fg-cards" aria-hidden="true">
+      <span class="fg-el fg-bush fg-el--sway" data-fg-in="left">
+        <img src="/assets/kerala-temple/foreground/fg-bush.webp" alt="" width="1523" height="635" decoding="async" />
+      </span>
+      <span class="fg-el fg-tree fg-el--sway" data-fg-in="right">
+        <img src="/assets/kerala-temple/foreground/fg-tree.webp" alt="" width="988" height="944" decoding="async" />
+      </span>
+    </div>
+    <script type="module" src="/src/main.js"></script>
+  </body>
+</html>

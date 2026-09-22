@@ -1,0 +1,14 @@
+node_modules
+dist
+.DS_Store
+
+# local scratch: preview captures, test screenshots, editor/agent settings
+.preview/
+.tmp-shots/
+.claude/
+
+# original artwork kept locally; the site uses the optimised copies in public/
+/*.png
+/*.jpg
+/*.jpeg
+/*.webp
