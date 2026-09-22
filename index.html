@@ -10,6 +10,12 @@
     <link rel="icon" href="/favicon.ico" sizes="16x16 32x32 48x48 64x64" />
     <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
     <link rel="preload" href="/fonts/onest-600.woff2" as="font" type="font/woff2" crossorigin />
+    <!-- the hero scene's layers: start fetching now instead of after the script runs -->
+    <link rel="preload" as="image" href="/assets/kerala-temple/foreground/temple-pond.webp?v=6" fetchpriority="high" />
+    <link rel="preload" as="image" href="/assets/kerala-temple/foreground/rangam-grove-hq.webp?v=2" fetchpriority="high" />
+    <link rel="preload" as="image" href="/assets/kerala-temple/architecture/gopuram-hq.webp?v=29" fetchpriority="high" />
+    <link rel="preload" as="image" href="/assets/kerala-temple/architecture/inner-yard-hq.webp?v=11" />
+    <link rel="preload" as="image" href="/assets/kerala-temple/characters/kathakali-troupe-hq.webp?v=2" />
   </head>
   <body id="top">
     <div class="sky-clouds" aria-hidden="true">
@@ -79,7 +85,7 @@
           <div class="card-fr">
             <canvas class="cloth-source" layoutsubtree="true"></canvas>
             <div class="cloth-content">
-              <img class="card-art" src="/assets/kerala-temple/characters/kathakali-troupe.png" alt="Kathakali dancers in green-faced and red-bearded costume, ringed by drummers and a seated audience" />
+              <img class="card-art" src="/assets/kerala-temple/characters/kathakali-troupe-hq.webp?v=2" alt="Kathakali dancers in green-faced and red-bearded costume, ringed by drummers and a seated audience" />
               <div class="card-lab">
                 <p class="card-lede">An offering to the gods: painted faces and towering crowns tell stories of gods and goddesses from the Ramayana, Mahabharata and Puranas, from dusk until dawn.</p>
                 <div class="card-lab-row">

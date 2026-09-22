@@ -93,7 +93,7 @@ export const sceneLayers = [
   },
   {
     id: "rangam-grove",
-    src: "/assets/kerala-temple/foreground/rangam-grove.png?v=1",
+    src: "/assets/kerala-temple/foreground/rangam-grove-hq.webp?v=2",
     depth: 36,
     worldZ: 3.4,
     parallax: 0,
@@ -141,7 +141,7 @@ export const sceneLayers = [
   },
   {
     id: "gopuram",
-    src: "/assets/kerala-temple/architecture/gopuram.png?v=28",
+    src: "/assets/kerala-temple/architecture/gopuram-hq.webp?v=29",
     depth: 420,
     parallax: 0.06,
     scale: 1.12,
@@ -201,7 +201,7 @@ export const sceneLayers = [
   },
   {
     id: "inner-yard",
-    src: "/assets/kerala-temple/architecture/inner-yard.png?v=10",
+    src: "/assets/kerala-temple/architecture/inner-yard-hq.webp?v=11",
     // Sit just behind the gopuram so the door sill meets the courtyard floor.
     depth: 505,
     parallax: 0,
@@ -227,7 +227,7 @@ export const sceneLayers = [
   },
   {
     id: "kathakali-troupe",
-    src: "/assets/kerala-temple/characters/kathakali-troupe.png?v=1",
+    src: "/assets/kerala-temple/characters/kathakali-troupe-hq.webp?v=2",
     depth: 678,
     parallax: 0,
     scale: 1,

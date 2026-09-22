@@ -1197,12 +1197,46 @@ html {
   }
 
   /* First screen holds the heading and the cue; the chapter list follows below the fold. */
+  .card,
+  .card--lg {
+    height: clamp(460px, 132vw, 580px);
+  }
+
+  .afterlight p {
+    font-size: 16px;
+  }
+
+  .after-brand {
+    font-size: 11px !important;
+    color: var(--bone-dim) !important;
+    letter-spacing: 0.16em;
+  }
+
+  /* foliage stays a frame, not a curtain: small enough to leave card text clear */
+  .fg-bush {
+    left: -24%;
+    bottom: -26px;
+    width: 58vw;
+  }
+
+  .fg-tree {
+    right: -20%;
+    bottom: -30px;
+    width: 38vw;
+  }
+}
+
+/* Phones and other tall, narrow screens (portrait tablets, narrow windows):
+   the cue becomes a dark pill closing the first screen and the chapters a
+   list on a dark panel below the fold. Landscape desktop keeps the strip. */
+@media (max-width: 600px), (max-aspect-ratio: 85/100) and (max-width: 900px) {
   /* A grid whose first row fills the first screen: the heading sits at its top,
      the cue closes it, and the chapter list is the next row down. The heading
      keeps its own short box, so its shade doesn't stretch over the scene. */
   .hero {
     display: grid;
     grid-template-rows: minmax(calc(100svh - 88px - 88px - env(safe-area-inset-top, 0px)), auto) auto auto;
+    grid-template-columns: minmax(0, 1fr);
     align-content: start;
     height: auto;
     padding-bottom: calc(48px + env(safe-area-inset-bottom, 0px));
@@ -1287,35 +1321,8 @@ html {
     line-height: 1.45;
     color: rgb(232 224 208 / 0.78);
   }
-
-  .card,
-  .card--lg {
-    height: clamp(460px, 132vw, 580px);
-  }
-
-  .afterlight p {
-    font-size: 16px;
-  }
-
-  .after-brand {
-    font-size: 11px !important;
-    color: var(--bone-dim) !important;
-    letter-spacing: 0.16em;
-  }
-
-  /* foliage stays a frame, not a curtain: small enough to leave card text clear */
-  .fg-bush {
-    left: -24%;
-    bottom: -26px;
-    width: 58vw;
-  }
-
-  .fg-tree {
-    right: -20%;
-    bottom: -30px;
-    width: 38vw;
-  }
 }
+
 
 
 @media (prefers-reduced-motion: reduce) {

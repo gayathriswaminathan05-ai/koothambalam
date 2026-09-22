@@ -42,14 +42,19 @@ export async function createWorld(canvas) {
   const byId = Object.fromEntries(sceneLayers.map((layer) => [layer.id, layer]));
   const stack = [...liveLayerIds].reverse().map((id) => byId[id]).filter(Boolean);
 
+  // Fetch every layer at once; waiting on each in turn left the hero dark for the sum of all downloads.
+  const textures = await Promise.all(
+    stack.map((layer) =>
+      loadTexture(THREE, layer.src).then(
+        (loaded) => loaded.texture,
+        () => null,
+      ),
+    ),
+  );
+
   for (const [index, layer] of stack.entries()) {
-    let texture;
-    try {
-      const loaded = await loadTexture(THREE, layer.src);
-      texture = loaded.texture;
-    } catch {
-      continue;
-    }
+    const texture = textures[index];
+    if (!texture) continue;
 
     const material = new THREE.MeshBasicMaterial({
       map: texture,
