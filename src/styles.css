@@ -157,7 +157,8 @@ body {
 .scroll-track {
   position: relative;
   z-index: 6;
-  height: 280vh;
+  /* 280vh for the walk to the door + 72vh to step through it into the courtyard */
+  height: 352vh;
   pointer-events: none;
 }
 
@@ -499,6 +500,81 @@ body {
   }
 }
 
+/* Sound toggle for the troupe: appears once the performers are in view. */
+.sound-toggle {
+  position: fixed;
+  right: calc(var(--pad) + env(safe-area-inset-right, 0px));
+  bottom: calc(22px + env(safe-area-inset-bottom, 0px));
+  z-index: 55;
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 10px 16px 10px 12px;
+  border: 1px solid rgb(232 224 208 / 0.16);
+  border-radius: 999px;
+  background: rgb(5 9 12 / 0.62);
+  -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(8px);
+  font: inherit;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--bone);
+  cursor: pointer;
+  opacity: 0;
+  transform: translate3d(0, 10px, 0);
+  pointer-events: none;
+  transition:
+    opacity 0.5s var(--ease-out),
+    transform 0.5s var(--ease-out),
+    border-color 0.3s;
+}
+
+.sound-toggle.is-visible {
+  opacity: 1;
+  transform: none;
+  pointer-events: auto;
+}
+
+.sound-toggle:hover,
+.sound-toggle:focus-visible {
+  border-color: rgb(232 160 48 / 0.6);
+}
+
+.sound-toggle:focus-visible {
+  outline: 1px solid var(--lamp);
+  outline-offset: 3px;
+}
+
+.sound-toggle svg {
+  width: 18px;
+  height: 18px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.6;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.sound-toggle .spk {
+  fill: currentColor;
+  stroke: none;
+}
+
+.sound-toggle .wave {
+  display: none;
+  stroke: var(--lamp);
+}
+
+.sound-toggle.is-on .wave {
+  display: inline;
+}
+
+.sound-toggle.is-on .mute {
+  display: none;
+}
+
 /* The card a menu link lands on lights up; its neighbours dim so it reads. */
 .card {
   transition: filter 0.7s var(--ease-out);
@@ -776,6 +852,7 @@ body.scrolled .hero-cue {
 }
 
 body.still-shot .nav,
+body.still-shot .sound-toggle,
 body.still-shot .fg,
 body.still-shot .hero,
 body.still-shot .cur-dot,

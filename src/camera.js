@@ -29,7 +29,18 @@ function catmull(p0, p1, p2, p3, t) {
 
 const KEYS = ["x", "y", "z", "lookX", "lookY", "lookZ", "fov"];
 
-function path(door, yard) {
+/** How far past the door (as a share of the door → yard distance) the epilogue ends:
+ * just over the threshold, so the gopuram frame drops away without closing in on the troupe. */
+const INSIDE = 0.05;
+/** Lens once inside: wide enough to take in the whole troupe on a landscape screen.
+ * Portrait screens widen less — the full circle can't fit a phone at a readable size,
+ * and a wider lens would run past the courtyard floor. */
+function fovInside(aspect) {
+  return aspect >= 1 ? 54 : 50;
+}
+
+function path(door, yard, aspect) {
+  const FOV_INSIDE = fovInside(aspect);
   const d = door;
   const y = yard ?? { x: d.x, y: d.y, z: d.z - 20 };
   const x = d.x;
@@ -42,6 +53,10 @@ function path(door, yard) {
     { t: 0.78, x, y: d.y + 0.08, z: d.z + 10, lookX: x, lookY: d.y + 0.02, lookZ: d.z - 3, fov: 33.5 },
     { t: 0.9, x, y: d.y + 0.03, z: d.z + 3.6, lookX: x, lookY: lerp(d.y, y.y, 0.25), lookZ: y.z, fov: 34 },
     { t: 1, x, y: lerp(d.y, y.y, 0.45), z: d.z + 3.4, lookX: x, lookY: y.y, lookZ: y.z, fov: 36 },
+    // epilogue: step through the doorway (the gopuram plate drops away as it's passed)
+    // and settle where the whole troupe sits inside the frame
+    { t: 1.2, x, y: lerp(d.y, y.y, 0.55), z: lerp(d.z, y.z, INSIDE * 0.6), lookX: x, lookY: y.y, lookZ: y.z, fov: 44 },
+    { t: 1.4, x, y: lerp(d.y, y.y, 0.6), z: lerp(d.z, y.z, INSIDE), lookX: x, lookY: y.y, lookZ: y.z, fov: FOV_INSIDE },
   ];
 }
 
@@ -56,9 +71,9 @@ export function walkValue(walk, progress, key, fallback) {
 }
 
 export function getCameraState(progress, targets = {}, aspect = 1.6) {
-  const p = clamp01(progress);
   const door = targets.door ?? { x: 0, y: -8, z: -34 };
-  const frames = path(door, targets.yard);
+  const frames = path(door, targets.yard, aspect);
+  const p = Math.min(frames[frames.length - 1].t, Math.max(0, progress));
 
   let i = 0;
   while (i < frames.length - 2 && p > frames[i + 1].t) i += 1;

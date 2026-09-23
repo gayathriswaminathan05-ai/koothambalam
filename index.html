@@ -15,7 +15,6 @@
     <link rel="preload" as="image" href="/assets/kerala-temple/foreground/rangam-grove-hq.webp?v=2" fetchpriority="high" />
     <link rel="preload" as="image" href="/assets/kerala-temple/architecture/gopuram-hq.webp?v=29" fetchpriority="high" />
     <link rel="preload" as="image" href="/assets/kerala-temple/architecture/inner-yard-hq.webp?v=11" />
-    <link rel="preload" as="image" href="/assets/kerala-temple/characters/kathakali-troupe-hq.webp?v=2" />
   </head>
   <body id="top">
     <div class="sky-clouds" aria-hidden="true">
@@ -78,6 +77,14 @@
       </section>
     </div>
     <div class="cur-dot" id="cursor" aria-hidden="true"></div>
+    <button class="sound-toggle" id="sound-toggle" type="button" aria-pressed="false">
+      <svg viewBox="0 0 24 24" aria-hidden="true">
+        <path class="spk" d="M4 9.5h3.2L12 5.5v13l-4.8-4H4z" />
+        <path class="wave" d="M15.5 9a4.2 4.2 0 0 1 0 6M18 6.6a7.6 7.6 0 0 1 0 10.8" />
+        <path class="mute" d="M16 9.5l5 5M21 9.5l-5 5" />
+      </svg>
+      <span class="sound-label">Sound off</span>
+    </button>
 
     <main class="after-walk" id="after-walk">
       <div class="cards" id="cards">

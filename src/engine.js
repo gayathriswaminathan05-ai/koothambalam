@@ -43,21 +43,27 @@ export async function createWorld(canvas) {
   const stack = [...liveLayerIds].reverse().map((id) => byId[id]).filter(Boolean);
 
   // Fetch every layer at once; waiting on each in turn left the hero dark for the sum of all downloads.
-  const textures = await Promise.all(
+  // A video layer isn't awaited: its plate stays invisible until the first frame decodes.
+  const plates = await Promise.all(
     stack.map((layer) =>
-      loadTexture(THREE, layer.src).then(
-        (loaded) => loaded.texture,
-        () => null,
-      ),
+      layer.video
+        ? videoPlate(layer)
+        : loadTexture(THREE, layer.src).then(
+            (loaded) => ({ texture: loaded.texture }),
+            () => null,
+          ),
     ),
   );
+  const videos = plates.filter((plate) => plate?.video).map((plate) => plate.video);
 
   for (const [index, layer] of stack.entries()) {
-    const texture = textures[index];
-    if (!texture) continue;
+    const plate = plates[index];
+    if (!plate) continue;
+    const texture = plate.texture;
 
     const material = new THREE.MeshBasicMaterial({
       map: texture,
+      alphaMap: plate.alphaMap ?? null,
       color: layer.shade ? new THREE.Color(layer.shade) : 0xffffff,
       transparent: true,
       alphaTest: 0.04,
@@ -77,7 +83,7 @@ export async function createWorld(canvas) {
     mesh.userData = {
       layer,
       baseZ: mesh.position.z,
-      textureAspect: tw / th,
+      textureAspect: layer.videoAspect ?? tw / th,
     };
     scene.add(mesh);
     meshes.push(mesh);
@@ -105,6 +111,8 @@ export async function createWorld(canvas) {
 
   function applyCamera(progress, time) {
     const shot = getCameraState(reduce.matches ? 0.5 : progress, aims(meshes), camera.aspect);
+    // the camera may run past 1 into the courtyard; the layers' own fades and drifts stop at the door
+    progress = Math.min(progress, 1);
     pointer.x += (pointer.tx - pointer.x) * 0.05;
     pointer.y += (pointer.ty - pointer.y) * 0.05;
 
@@ -187,11 +195,51 @@ export async function createWorld(canvas) {
     render() {
       renderer.render(scene, camera);
     },
+    /** Play the scene's videos only while they can be seen; they idle otherwise. */
+    setVideosPlaying(on) {
+      for (const video of videos) {
+        if (on && video.paused) video.play().catch(() => {});
+        else if (!on && !video.paused) video.pause();
+      }
+    },
     dispose() {
       window.removeEventListener("pointermove", onPointer);
       window.removeEventListener("resize", resize);
+      for (const video of videos) {
+        video.pause();
+        video.removeAttribute("src");
+        video.load();
+      }
     },
   };
+}
+
+/**
+ * A looping, muted video whose frames stack colour (top half) over a greyscale cut-out
+ * matte (bottom half). Two textures read the same element: one maps the top half as
+ * colour, the other the bottom half as the alpha map, so the performers keep a clean
+ * edge in every browser without needing a transparent video format.
+ */
+function videoPlate(layer) {
+  const video = document.createElement("video");
+  video.muted = true;
+  video.loop = true;
+  video.playsInline = true;
+  video.setAttribute("playsinline", "");
+  video.preload = "auto";
+  video.crossOrigin = "anonymous";
+  video.src = layer.video.startsWith("/") ? import.meta.env.BASE_URL + layer.video.slice(1) : layer.video;
+
+  const texture = new THREE.VideoTexture(video);
+  texture.colorSpace = THREE.SRGBColorSpace;
+  texture.repeat.set(1, 0.5);
+  texture.offset.set(0, 0.5);
+
+  const alphaMap = new THREE.VideoTexture(video);
+  alphaMap.repeat.set(1, 0.5);
+  alphaMap.offset.set(0, 0);
+
+  return { texture, alphaMap, video };
 }
 
 function makeDoorOccluder(THREE, image, hole, geometry) {

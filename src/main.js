@@ -13,15 +13,24 @@ if (new URLSearchParams(location.search).has("still")) {
   document.body.classList.add("still-shot");
 }
 
+/** Walk progress at which the troupe starts to show through the gopuram doorway. */
+const TROUPE_VIDEO_FROM = 0.6;
+const TROUPE_SOUND_FROM = 0.72;
+
+// Past the doorway the walk continues into the courtyard: progress runs 0 → 1 up to
+// the door (unchanged pacing) and on to 1 + EPILOGUE inside, where the whole troupe is in view.
+export const EPILOGUE = 0.4;
+
 function walkEnd() {
   const walk = document.querySelector("#walk-track");
   return Math.max(1, (walk?.offsetHeight ?? 0) - window.innerHeight);
 }
 
 function scrollProgress() {
-  if (lockProgress) return Math.min(1, Math.max(0, forced));
-  const end = walkEnd();
-  return Math.min(1, Math.max(0, window.scrollY / end));
+  const max = 1 + EPILOGUE;
+  if (lockProgress) return Math.min(max, Math.max(0, forced));
+  const end = walkEnd() / max;
+  return Math.min(max, Math.max(0, window.scrollY / end));
 }
 
 const sky = mountSkyClouds();
@@ -89,10 +98,109 @@ function tick(time) {
   const follow = reduce.matches || lockProgress ? 1 : 1 - Math.exp(-dt * 14);
   current += (target - current) * follow;
   world.applyCamera(current, time);
+  world.setVideosPlaying(current > TROUPE_VIDEO_FROM);
+  sound?.update(current);
   world.render();
   applySky(current);
   applyAfter();
   frame = requestAnimationFrame(tick);
+}
+
+/**
+ * The troupe's drums and cymbals: they start only once the performers are in view and
+ * fade out when you walk back. Browsers refuse sound until the visitor has clicked or
+ * tapped, so when that happens the toggle offers "Tap for sound" instead.
+ */
+function mountTroupeSound() {
+  const button = document.getElementById("sound-toggle");
+  const label = button?.querySelector(".sound-label");
+  if (!button) return null;
+  const audio = new Audio(import.meta.env.BASE_URL + "assets/kerala-temple/characters/kathakali-troupe-audio.m4a?v=1");
+  audio.loop = true;
+  audio.preload = "auto";
+  audio.volume = 0;
+
+  const FULL = 0.85;
+  let inView = false;
+  let userMuted = false;
+  let blocked = false;
+  let fadeRaf = 0;
+
+  function render() {
+    const on = !audio.paused && !userMuted && !blocked;
+    button.classList.toggle("is-visible", inView);
+    button.setAttribute("aria-pressed", String(on));
+    button.classList.toggle("is-on", on);
+    if (label) label.textContent = blocked && !userMuted ? "Tap for sound" : on ? "Sound on" : "Sound off";
+  }
+
+  function fadeTo(target, done) {
+    cancelAnimationFrame(fadeRaf);
+    const from = audio.volume;
+    const start = performance.now();
+    const step = (now) => {
+      const t = Math.min(1, (now - start) / 900);
+      audio.volume = from + (target - from) * t;
+      if (t < 1) fadeRaf = requestAnimationFrame(step);
+      else done?.();
+    };
+    fadeRaf = requestAnimationFrame(step);
+  }
+
+  function start() {
+    if (userMuted || !inView) return render();
+    audio
+      .play()
+      .then(() => {
+        blocked = false;
+        fadeTo(FULL);
+        render();
+      })
+      .catch(() => {
+        blocked = true;
+        render();
+      });
+  }
+
+  function stop() {
+    fadeTo(0, () => {
+      audio.pause();
+      render();
+    });
+    render();
+  }
+
+  button.addEventListener("click", () => {
+    if (!audio.paused && !userMuted && !blocked) {
+      userMuted = true;
+      stop();
+    } else {
+      userMuted = false;
+      start();
+    }
+  });
+
+  // any click, tap or key press unlocks sound; if the troupe is showing, start then
+  const unlock = () => {
+    if (blocked && inView && !userMuted) start();
+  };
+  window.addEventListener("pointerdown", unlock, { passive: true });
+  window.addEventListener("keydown", unlock);
+
+  render();
+  return {
+    update(progress) {
+      const show = progress >= TROUPE_SOUND_FROM;
+      if (show === inView) return;
+      inView = show;
+      if (show) start();
+      else stop();
+    },
+    destroy() {
+      cancelAnimationFrame(fadeRaf);
+      audio.pause();
+    },
+  };
 }
 
 function mountCursor() {
@@ -127,6 +235,7 @@ function mountCursor() {
 
 const cloth = mountClothCards();
 const cursor = mountCursor();
+const sound = mountTroupeSound();
 
 tick(performance.now());
 
@@ -137,6 +246,7 @@ if (import.meta.hot) {
     sky?.destroy();
     cloth?.destroy();
     cursor?.destroy();
+    sound?.destroy();
   });
 }
 
@@ -146,6 +256,7 @@ window.addEventListener("pagehide", () => {
   sky?.destroy();
   cloth?.destroy();
   cursor?.destroy();
+  sound?.destroy();
 });
 
 
