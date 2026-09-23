@@ -41,6 +41,9 @@ function fovInside(aspect) {
 
 function path(door, yard, aspect) {
   const FOV_INSIDE = fovInside(aspect);
+  // landscape frames tip down a touch so the front row of the audience is in view;
+  // portrait frames don't need it and would run past the courtyard floor
+  const TILT = aspect >= 1 ? 1 : 0;
   const d = door;
   const y = yard ?? { x: d.x, y: d.y, z: d.z - 20 };
   const x = d.x;
@@ -56,7 +59,7 @@ function path(door, yard, aspect) {
     // epilogue: step through the doorway (the gopuram plate drops away as it's passed)
     // and settle where the whole troupe sits inside the frame
     { t: 1.2, x, y: lerp(d.y, y.y, 0.55), z: lerp(d.z, y.z, INSIDE * 0.6), lookX: x, lookY: y.y, lookZ: y.z, fov: 44 },
-    { t: 1.4, x, y: lerp(d.y, y.y, 0.6), z: lerp(d.z, y.z, INSIDE), lookX: x, lookY: y.y, lookZ: y.z, fov: FOV_INSIDE },
+    { t: 1.4, x, y: lerp(d.y, y.y, 0.6) - 0.2 * TILT, z: lerp(d.z, y.z, INSIDE), lookX: x, lookY: y.y - 0.55 * TILT, lookZ: y.z, fov: FOV_INSIDE },
   ];
 }
 
