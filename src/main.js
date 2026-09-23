@@ -139,8 +139,9 @@ function mountTroupeSound() {
     const from = audio.volume;
     const start = performance.now();
     const step = (now) => {
-      const t = Math.min(1, (now - start) / 900);
-      audio.volume = from + (target - from) * t;
+      // a frame's timestamp can sit a hair before \`start\`; clamp so volume never leaves 0..1
+      const t = Math.min(1, Math.max(0, (now - start) / 900));
+      audio.volume = Math.min(1, Math.max(0, from + (target - from) * t));
       if (t < 1) fadeRaf = requestAnimationFrame(step);
       else done?.();
     };
