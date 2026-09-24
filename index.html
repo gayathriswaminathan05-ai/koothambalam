@@ -3,6 +3,18 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <!-- Hold the page on the night colour until the scene has drawn its first frame, then reveal
+         it all at once (main.js removes "booting"). The timeout is a failsafe: content can
+         never stay hidden, and without JavaScript nothing is hidden at all. -->
+    <style>
+      html { background: #071018; }
+      html.booting body { opacity: 0; }
+      body { transition: opacity 0.7s cubic-bezier(0.23, 1, 0.32, 1); }
+    </style>
+    <script>
+      document.documentElement.classList.add("booting");
+      setTimeout(function () { document.documentElement.classList.remove("booting"); }, 6000);
+    </script>
     <title>KOOTHAMBALAM - SACRED SPACES OF KERALA</title>
     <meta name="apple-mobile-web-app-title" content="Koothambalam" />
     <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png" />
@@ -15,6 +27,7 @@
     <link rel="preload" as="image" href="/assets/kerala-temple/foreground/rangam-grove-hq.webp?v=2" fetchpriority="high" />
     <link rel="preload" as="image" href="/assets/kerala-temple/architecture/gopuram-hq.webp?v=29" fetchpriority="high" />
     <link rel="preload" as="image" href="/assets/kerala-temple/architecture/inner-yard-hq.webp?v=11" />
+    <link rel="preload" as="image" href="/assets/kerala-temple/background/moon.webp?v=5" />
   </head>
   <body id="top">
     <div class="sky-clouds" aria-hidden="true">

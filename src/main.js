@@ -37,6 +37,27 @@ function scrollProgress() {
   return Math.min(max, Math.max(0, window.scrollY / end));
 }
 
+// Everything is revealed together once the scene has drawn (see the "booting" class in
+// index.html): fonts and the moon get a short head start so nothing pops in after the fade.
+const pageReady = Promise.race([
+  Promise.all([
+    document.fonts?.ready,
+    document.querySelector(".sky-moon")?.decode?.().catch(() => {}),
+  ]),
+  new Promise((resolve) => setTimeout(resolve, 1200)),
+]);
+let revealed = false;
+function reveal() {
+  if (revealed) return;
+  revealed = true;
+  pageReady.then(() =>
+    requestAnimationFrame(() => {
+      document.documentElement.classList.remove("booting");
+      performance.mark("page-revealed");
+    }),
+  );
+}
+
 const sky = mountSkyClouds();
 const world = await createWorld(canvas);
 const backdrop = document.querySelector(".sky-clouds");
@@ -107,6 +128,7 @@ function tick(time) {
   sound?.update(current);
   keepCue?.update(current);
   world.render();
+  reveal(); // the first frame is drawn: fade the whole page in
   applySky(current);
   applyAfter();
   frame = requestAnimationFrame(tick);
