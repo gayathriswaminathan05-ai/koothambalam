@@ -565,26 +565,46 @@ mountNav();
 function mountForeground() {
   const fg = document.getElementById("fg-cards");
   const cards = document.getElementById("cards");
+  const afterlight = document.querySelector(".afterlight");
   if (!fg || !cards) return;
   let retire = 0;
-  const io = new IntersectionObserver(
+  let cardsLive = false;
+  let afterlightIn = false;
+
+  // the leaves frame the cards; once Afterlight scrolls into view they sink away so they
+  // never sit over its closing text
+  function apply() {
+    const live = cardsLive && !afterlightIn;
+    if (live === fg.classList.contains("fg-active")) return;
+    clearTimeout(retire);
+    if (live) {
+      fg.classList.remove("fg-retiring");
+      fg.classList.add("fg-active");
+    } else {
+      fg.classList.remove("fg-active");
+      fg.classList.add("fg-retiring");
+      retire = setTimeout(() => fg.classList.remove("fg-retiring"), 900);
+    }
+  }
+
+  const steps = Array.from({ length: 21 }, (_, i) => i / 20);
+  new IntersectionObserver(
     ([entry]) => {
       const coverage = entry.intersectionRect.height / window.innerHeight;
-      const live = entry.isIntersecting && (entry.intersectionRatio >= 0.45 || coverage >= 0.45);
-      if (live === fg.classList.contains("fg-active")) return;
-      clearTimeout(retire);
-      if (live) {
-        fg.classList.remove("fg-retiring");
-        fg.classList.add("fg-active");
-      } else {
-        fg.classList.remove("fg-active");
-        fg.classList.add("fg-retiring");
-        retire = setTimeout(() => fg.classList.remove("fg-retiring"), 900);
-      }
+      cardsLive = entry.isIntersecting && (entry.intersectionRatio >= 0.45 || coverage >= 0.45);
+      apply();
     },
-    { threshold: Array.from({ length: 21 }, (_, i) => i / 20) },
-  );
-  io.observe(cards);
+    { threshold: steps },
+  ).observe(cards);
+  if (afterlight) {
+    new IntersectionObserver(
+      ([entry]) => {
+        afterlightIn = entry.isIntersecting && entry.intersectionRatio >= 0.15;
+        apply();
+      },
+      { threshold: steps },
+    ).observe(afterlight);
+  }
 }
 
 mountForeground();
