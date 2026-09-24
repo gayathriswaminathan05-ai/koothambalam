@@ -450,6 +450,41 @@ const sound = mountSound();
 const dance = mountPerformance(world.videos?.[0], sound);
 const keepCue = mountKeepScrolling();
 mountChapters();
+mountTroupeCompare();
+
+/**
+ * Side-by-side check of the two troupe versions, only on a link with ?compare: a small pill
+ * swaps the performers live, at the same spot on the walk. Visitors never see it.
+ */
+function mountTroupeCompare() {
+  const params = new URLSearchParams(location.search);
+  if (!params.has("compare") || !world.setTroupeVersion) return;
+  const pill = document.createElement("div");
+  pill.className = "compare-pill";
+  pill.setAttribute("role", "group");
+  pill.setAttribute("aria-label", "Troupe version");
+  const options = [
+    ["cutout", "Cut-out"],
+    ["translucent", "Translucent MP4"],
+  ];
+  const buttons = options.map(([kind, text]) => {
+    const b = document.createElement("button");
+    b.type = "button";
+    b.textContent = text;
+    b.dataset.kind = kind;
+    b.addEventListener("click", () => {
+      world.setTroupeVersion(kind);
+      params.set("troupe", kind);
+      history.replaceState(null, "", `${location.pathname}?${params}${location.hash}`);
+      sync(kind);
+    });
+    pill.append(b);
+    return b;
+  });
+  const sync = (kind) => buttons.forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.kind === kind)));
+  sync(params.get("troupe") === "translucent" ? "translucent" : "cutout");
+  document.body.append(pill);
+}
 
 tick(performance.now());
 

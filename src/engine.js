@@ -197,6 +197,30 @@ export async function createWorld(canvas) {
     },
     /** The scene's video elements (the troupe), for playback control. */
     videos,
+    /** Which version of the troupe is showing: "cutout" or "translucent". */
+    get troupeVersion() {
+      const video = videos[0];
+      return video && video.dataset.translucent && video.currentSrc === video.dataset.translucent ? "translucent" : "cutout";
+    },
+    /** Swap the troupe between its versions in place, keeping its spot in the loop. */
+    setTroupeVersion(kind) {
+      for (const video of videos) {
+        const next = video.dataset[kind];
+        if (!next || video.currentSrc === next) continue;
+        const wasPlaying = !video.paused;
+        const at = video.currentTime;
+        video.src = next;
+        video.load();
+        video.addEventListener(
+          "loadedmetadata",
+          () => {
+            video.currentTime = video.duration ? at % video.duration : 0;
+            if (wasPlaying) video.play().catch(() => {});
+          },
+          { once: true },
+        );
+      }
+    },
     /** Play the scene's videos only while they can be seen; they idle otherwise. */
     setVideosPlaying(on) {
       for (const video of videos) {
@@ -230,7 +254,11 @@ function videoPlate(layer) {
   video.setAttribute("playsinline", "");
   video.preload = "auto";
   video.crossOrigin = "anonymous";
-  video.src = layer.video.startsWith("/") ? import.meta.env.BASE_URL + layer.video.slice(1) : layer.video;
+  const url = (path) => (path.startsWith("/") ? import.meta.env.BASE_URL + path.slice(1) : path);
+  video.dataset.cutout = url(layer.video);
+  if (layer.videoTranslucent) video.dataset.translucent = url(layer.videoTranslucent);
+  const wanted = new URLSearchParams(location.search).get("troupe");
+  video.src = wanted === "translucent" && video.dataset.translucent ? video.dataset.translucent : video.dataset.cutout;
 
   const texture = new THREE.VideoTexture(video);
   texture.colorSpace = THREE.SRGBColorSpace;
