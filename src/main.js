@@ -15,7 +15,7 @@ if (new URLSearchParams(location.search).has("still")) {
 
 /** Walk progress at which the troupe starts to show through the gopuram doorway. */
 const TROUPE_VIDEO_FROM = 0.6;
-const TROUPE_SOUND_FROM = 0.72;
+const TROUPE_SOUND_FROM = 0.86;
 /** Inside the courtyard: from here one full pass of the dance plays, then the cards come in. */
 const ARRIVE = 1.3;
 /** Where each home chapter number takes you along the walk. */
@@ -116,8 +116,8 @@ function tick(time) {
  * All of the site's sound, behind one toggle:
  *  - a temple ambience (tanpura drone, light temple bells) that plays throughout, looped
  *    gaplessly through Web Audio;
- *  - the troupe's drums and cymbals, which come in only once the performers are in view
- *    and fade after their one pass — the ambience dips under them, then returns.
+ *  - the troupe's drums and cymbals, which come in only once you've scrolled up to the
+ *    performers and fade after their one pass; the ambience carries on underneath.
  * Browsers refuse sound until the visitor has clicked, tapped or pressed a key, so until
  * then the toggle offers "Play sound", and the first such gesture anywhere starts it.
  */
@@ -128,52 +128,51 @@ function mountSound() {
   const base = import.meta.env.BASE_URL;
 
   const AMBIENT = 0.42;
-  const AMBIENT_UNDER_TROUPE = 0.26;
   const TROUPE = 0.85;
   const LOOP_START = 0.5; // the file carries its first second again past 64 s, so 0.5 → 64.5 loops seamlessly
   const LOOP_LENGTH = 64;
 
-  const troupe = new Audio(base + "assets/kerala-temple/characters/kathakali-troupe-audio.m4a?v=1");
-  troupe.loop = true;
-  troupe.preload = "auto";
-  troupe.volume = 0;
-
+  // Both tracks run through one AudioContext: once a gesture has unlocked it, the drums can
+  // start the moment the troupe comes into view on every browser, iPhone included.
   const Ctx = window.AudioContext || window.webkitAudioContext;
-  let ctx = null;
-  let ambientGain = null;
-  let ambientLoading = null;
+  const ctx = Ctx ? new Ctx() : null;
+  const ambientGain = ctx?.createGain();
+  if (ambientGain) {
+    ambientGain.gain.value = 0;
+    ambientGain.connect(ctx.destination);
+  }
+
+  const decode = (url) =>
+    fetch(base + url)
+      .then((response) => response.arrayBuffer())
+      .then((data) => new Promise((resolve, reject) => ctx.decodeAudioData(data, resolve, reject)))
+      .catch(() => null);
 
   let muted = false; // the visitor turned sound off
   let blocked = true; // the browser hasn't allowed sound yet
   let troupeInView = false;
   let troupeFinished = false;
-  let fadeRaf = 0;
+  let troupeBuffer = null;
+  let troupeVoice = null; // { source, gain } while the drums are playing
 
   const soundOn = () => !muted && !blocked;
   const troupeActive = () => troupeInView && !troupeFinished;
 
-  function loadAmbient() {
-    if (ambientLoading) return ambientLoading;
-    if (!Ctx) return (ambientLoading = Promise.resolve(false));
-    ctx = new Ctx();
-    ambientGain = ctx.createGain();
-    ambientGain.gain.value = 0;
-    ambientGain.connect(ctx.destination);
-    ambientLoading = fetch(base + "assets/kerala-temple/atmosphere/temple-ambience.m4a?v=1")
-      .then((response) => response.arrayBuffer())
-      .then((data) => new Promise((resolve, reject) => ctx.decodeAudioData(data, resolve, reject)))
-      .then((buffer) => {
-        const source = ctx.createBufferSource();
-        source.buffer = buffer;
-        source.loop = true;
-        source.loopStart = LOOP_START;
-        source.loopEnd = Math.min(buffer.duration, LOOP_START + LOOP_LENGTH);
-        source.connect(ambientGain);
-        source.start(0, LOOP_START);
-        return true;
-      })
-      .catch(() => false);
-    return ambientLoading;
+  if (ctx) {
+    decode("assets/kerala-temple/atmosphere/temple-ambience.m4a?v=1").then((buffer) => {
+      if (!buffer) return;
+      const source = ctx.createBufferSource();
+      source.buffer = buffer;
+      source.loop = true;
+      source.loopStart = LOOP_START;
+      source.loopEnd = Math.min(buffer.duration, LOOP_START + LOOP_LENGTH);
+      source.connect(ambientGain);
+      source.start(0, LOOP_START);
+    });
+    decode("assets/kerala-temple/characters/kathakali-troupe-audio.m4a?v=1").then((buffer) => {
+      troupeBuffer = buffer;
+      apply(); // in case the troupe is already in view
+    });
   }
 
   function render() {
@@ -182,52 +181,45 @@ function mountSound() {
     if (label) label.textContent = muted ? "Sound off" : blocked ? "Play sound" : "Sound on";
   }
 
-  function fadeTroupe(target, done) {
-    cancelAnimationFrame(fadeRaf);
-    const from = troupe.volume;
-    const start = performance.now();
-    const step = (now) => {
-      // a frame's timestamp can sit a hair before the fade's start; clamp so volume never leaves 0..1
-      const t = Math.min(1, Math.max(0, (now - start) / 900));
-      troupe.volume = Math.min(1, Math.max(0, from + (target - from) * t));
-      if (t < 1) fadeRaf = requestAnimationFrame(step);
-      else done?.();
-    };
-    fadeRaf = requestAnimationFrame(step);
+  function startTroupe() {
+    if (troupeVoice || !troupeBuffer) return;
+    const source = ctx.createBufferSource();
+    source.buffer = troupeBuffer;
+    source.loop = true;
+    const gain = ctx.createGain();
+    gain.gain.value = 0;
+    source.connect(gain).connect(ctx.destination);
+    source.start();
+    gain.gain.setTargetAtTime(TROUPE, ctx.currentTime, 0.3);
+    troupeVoice = { source, gain };
   }
 
-  /** Bring both tracks to where they should be right now. */
+  function stopTroupe() {
+    if (!troupeVoice) return;
+    const { source, gain } = troupeVoice;
+    troupeVoice = null;
+    const now = ctx.currentTime;
+    gain.gain.cancelScheduledValues(now);
+    gain.gain.setTargetAtTime(0, now, 0.25);
+    source.stop(now + 1.5);
+  }
+
+  /** Bring both tracks to where they should be right now. The ambience never dips for the drums. */
   function apply() {
-    if (ctx && ambientGain) {
-      const level = !soundOn() ? 0 : troupeActive() ? AMBIENT_UNDER_TROUPE : AMBIENT;
-      ambientGain.gain.setTargetAtTime(level, ctx.currentTime, level ? 0.6 : 0.25);
-    }
-    if (soundOn() && troupeActive()) {
-      if (troupe.paused) troupe.play().catch(() => {});
-      fadeTroupe(TROUPE);
-    } else if (!troupe.paused) {
-      fadeTroupe(0, () => troupe.pause());
-    }
+    if (!ctx) return render();
+    ambientGain.gain.setTargetAtTime(soundOn() ? AMBIENT : 0, ctx.currentTime, soundOn() ? 0.6 : 0.25);
+    if (soundOn() && troupeActive()) startTroupe();
+    else stopTroupe();
     render();
   }
 
   /** Try to start sound; succeeds inside a gesture, or straight away if the browser allows autoplay. */
   async function enable() {
-    if (muted) return render();
-    loadAmbient();
-    if (ctx && ctx.state !== "running") {
+    if (muted || !ctx) return render();
+    if (ctx.state !== "running") {
       await Promise.race([ctx.resume().catch(() => {}), new Promise((r) => setTimeout(r, 350))]);
     }
-    blocked = !!ctx && ctx.state !== "running";
-    if (!blocked) {
-      // let the troupe track play later without another gesture (Safari wants one play() inside it)
-      troupe
-        .play()
-        .then(() => {
-          if (!troupeActive()) troupe.pause();
-        })
-        .catch(() => {});
-    }
+    blocked = ctx.state !== "running";
     apply();
   }
 
@@ -253,13 +245,8 @@ function mountSound() {
   // don't keep playing in a hidden tab
   document.addEventListener("visibilitychange", () => {
     if (!ctx) return;
-    if (document.hidden) {
-      ctx.suspend().catch(() => {});
-      if (!troupe.paused) troupe.pause();
-    } else if (soundOn()) {
-      ctx.resume().catch(() => {});
-      apply();
-    }
+    if (document.hidden) ctx.suspend().catch(() => {});
+    else if (soundOn()) ctx.resume().catch(() => {});
   });
 
   render();
@@ -272,21 +259,19 @@ function mountSound() {
       troupeInView = show;
       apply();
     },
-    /** The performance is over: the drums fade out, the ambience comes back up. */
+    /** The performance is over: the drums fade out; the ambience carries on. */
     finish() {
       troupeFinished = true;
       apply();
     },
-    /** Back in the courtyard for another pass: the drums may play again. */
+    /** Back in the courtyard for another pass: the drums may play again, from the top. */
     resume() {
       if (!troupeFinished) return;
       troupeFinished = false;
-      troupe.currentTime = 0;
       apply();
     },
     destroy() {
-      cancelAnimationFrame(fadeRaf);
-      troupe.pause();
+      stopTroupe();
       ctx?.close().catch(() => {});
     },
   };
