@@ -128,7 +128,7 @@ function mountSound() {
   const base = import.meta.env.BASE_URL;
 
   const AMBIENT = 0.42;
-  const TROUPE = 0.85;
+  const TROUPE = 1.0;
   const LOOP_START = 0.5; // the file carries its first second again past 64 s, so 0.5 → 64.5 loops seamlessly
   const LOOP_LENGTH = 64;
 
@@ -140,6 +140,21 @@ function mountSound() {
   if (ambientGain) {
     ambientGain.gain.value = 0;
     ambientGain.connect(ctx.destination);
+  }
+  // the drums already peak near full scale, so they're lifted through a compressor rather than
+  // simply turned up: louder and clearly on top of the drone, without distorting
+  let troupeBus = null;
+  if (ctx) {
+    const squeeze = ctx.createDynamicsCompressor();
+    squeeze.threshold.value = -20;
+    squeeze.knee.value = 8;
+    squeeze.ratio.value = 4;
+    squeeze.attack.value = 0.004;
+    squeeze.release.value = 0.18;
+    const makeup = ctx.createGain();
+    makeup.gain.value = 1.8;
+    squeeze.connect(makeup).connect(ctx.destination);
+    troupeBus = squeeze;
   }
 
   const decode = (url) =>
@@ -188,10 +203,10 @@ function mountSound() {
     source.loop = true;
     const gain = ctx.createGain();
     gain.gain.value = 0;
-    source.connect(gain).connect(ctx.destination);
+    source.connect(gain).connect(troupeBus);
     source.start();
     gain.gain.setTargetAtTime(TROUPE, ctx.currentTime, 0.3);
-    troupeVoice = { source, gain };
+    troupeVoice = { source, gain, startedAt: ctx.currentTime };
   }
 
   function stopTroupe() {
@@ -253,6 +268,18 @@ function mountSound() {
   enable(); // plays at once where the browser allows it; otherwise waits for the first gesture
 
   return {
+    /**
+     * Seconds until the dance music finishes its current pass — or the pass after, if less
+     * than 4 s are left — so a visitor arriving in the courtyard always hears a real stretch
+     * of it. Null when the drums aren't playing.
+     */
+    secondsToEndOfPass() {
+      if (!troupeVoice || !troupeBuffer) return null;
+      const length = troupeBuffer.duration;
+      const into = (ctx.currentTime - troupeVoice.startedAt) % length;
+      const left = length - into;
+      return left < 4 ? left + length : left;
+    },
     update(progress) {
       const show = progress >= TROUPE_SOUND_FROM;
       if (show === troupeInView) return;
@@ -278,19 +305,18 @@ function mountSound() {
 }
 
 /**
- * One pass of the dance. The troupe loops seamlessly while you walk up to the doorway;
- * once you're inside the courtyard, one full clip's worth of playing time is counted,
- * then the sound fades and the page glides on to the cards. Walking back out resets it.
+ * One pass of the dance. The troupe loops while you walk up to the doorway, and the drums
+ * start as you reach it. Once you're inside the courtyard the performance runs to the end
+ * of the dance music's pass (about 10 s), the dancers looping with it; then the drums fade
+ * and the page glides on to the cards. Walking back out resets it.
  */
 function mountPerformance(video, sound) {
   if (!video) return null;
   const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
+  const DANCE_SECONDS = 10; // the dance music's length, used when sound is off
   let arrived = false;
-  let played = 0;
-  let lastTime = 0;
+  let timer = 0;
   const state = { done: false };
-
-  const clipLength = () => (Number.isFinite(video.duration) && video.duration > 0 ? video.duration : 3.7);
 
   function advance() {
     // only when the visitor is still standing at the end of the walk — never pull them back
@@ -303,21 +329,12 @@ function mountPerformance(video, sound) {
     });
   }
 
-  video.addEventListener("timeupdate", () => {
-    const t = video.currentTime;
-    if (arrived && !state.done) {
-      const length = clipLength();
-      const step = t >= lastTime ? t - lastTime : t + (length - lastTime); // wrapped round the loop
-      played += Math.min(Math.max(step, 0), 1);
-      if (played >= length) {
-        state.done = true;
-        video.pause();
-        sound?.finish();
-        advance();
-      }
-    }
-    lastTime = t;
-  });
+  function finish() {
+    state.done = true;
+    video.pause();
+    sound?.finish();
+    advance();
+  }
 
   return {
     get done() {
@@ -326,10 +343,11 @@ function mountPerformance(video, sound) {
     update(progress) {
       if (!arrived && progress >= ARRIVE) {
         arrived = true;
-        played = 0;
-        lastTime = video.currentTime;
+        const seconds = sound?.secondsToEndOfPass() ?? DANCE_SECONDS;
+        timer = setTimeout(finish, seconds * 1000);
       } else if (arrived && progress < ARRIVE - 0.05) {
         arrived = false;
+        clearTimeout(timer);
         if (state.done) {
           state.done = false;
           sound?.resume();
