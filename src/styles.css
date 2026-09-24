@@ -1,4 +1,8 @@
 :root {
+  /* the foreground bush's width; also sets how much room is left below Afterlight so the
+     page ends with its text resting just above the leaves */
+  --bush-w: clamp(360px, 44vw, 780px);
+  --bush-sink: 34px;
   --night: #071018;
   --bone: #e8e0d0;
   --bone-dim: #9a9080;
@@ -458,8 +462,8 @@ body {
 /* the bush banks the lower-left corner, the jackfruit tree leans in from the right */
 .fg-bush {
   left: -7%;
-  bottom: -34px;
-  width: clamp(360px, 44vw, 780px);
+  bottom: calc(-1 * var(--bush-sink));
+  width: var(--bush-w);
 }
 
 .fg-tree {
@@ -1209,9 +1213,8 @@ html {
 .afterlight {
   pointer-events: auto;
   width: min(1810px, calc(100% - 2 * var(--pad)));
-  /* far enough below the cards that, with the cards centred, Afterlight is still out of view —
-     so the foliage can frame the cards on any screen and has sunk away before this text arrives */
-  margin: max(10vh, calc((100svh - min(78vh, 788px)) / 2 + 56px)) auto 10vh;
+  /* the room below lets the page end with the whole band resting just above the foreground bush */
+  margin: 10vh auto calc(var(--bush-w) * 635 / 1523 - var(--bush-sink) + 24px);
   padding: clamp(28px, 5vh, 56px) clamp(20px, 3vw, 48px) clamp(32px, 6vh, 64px);
   border-top: 1px solid rgb(232 224 208 / 0.16);
   border-bottom: 1px solid rgb(232 224 208 / 0.06);
@@ -1270,9 +1273,12 @@ html {
 }
 
 @media (max-width: 720px) {
+  :root {
+    --bush-w: 78vw;
+  }
+
   .fg-bush {
     left: -18%;
-    width: 78vw;
   }
 
   .fg-tree {
@@ -1282,10 +1288,6 @@ html {
 }
 
 @media (max-width: 900px) {
-  .afterlight {
-    margin-top: 10vh;
-  }
-
   .cards {
     grid-template-columns: 1fr;
     grid-template-rows: none;
@@ -1345,10 +1347,13 @@ html {
   }
 
   /* foliage stays a frame, not a curtain: small enough to leave card text clear */
+  :root {
+    --bush-w: 58vw;
+    --bush-sink: 26px;
+  }
+
   .fg-bush {
     left: -24%;
-    bottom: -26px;
-    width: 58vw;
   }
 
   .fg-tree {

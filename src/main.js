@@ -571,10 +571,11 @@ function mountForeground() {
   let cardsLive = false;
   let afterlightIn = false;
 
-  // the leaves frame the cards; once Afterlight scrolls into view they sink away so they
-  // never sit over its closing text
+  // the leaves come in with the cards and stay through Afterlight to the end of the page
+  // (the page leaves room below Afterlight so its text rests above them); they go only when
+  // you scroll back up into the walk
   function apply() {
-    const live = cardsLive && !afterlightIn;
+    const live = cardsLive || afterlightIn;
     if (live === fg.classList.contains("fg-active")) return;
     clearTimeout(retire);
     if (live) {
@@ -599,7 +600,7 @@ function mountForeground() {
   if (afterlight) {
     new IntersectionObserver(
       ([entry]) => {
-        afterlightIn = entry.isIntersecting && entry.intersectionRatio >= 0.15;
+        afterlightIn = entry.isIntersecting;
         apply();
       },
       { threshold: steps },
