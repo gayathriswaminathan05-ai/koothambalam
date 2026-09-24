@@ -230,11 +230,8 @@ export const sceneLayers = [
     src: "/assets/kerala-temple/characters/kathakali-troupe-hq.webp?v=2",
     // Looping performance: colour in the top half of each frame, its cut-out matte in the
     // bottom half (see videoPlate in engine.js). Replaces the still once it can play.
-    video: "/assets/kerala-temple/characters/kathakali-troupe.mp4?v=8",
-    videoAspect: 1024 / 498,
-    // comparison version (open the site with ?compare): the original MP4 at full resolution,
-    // no cut-out — its black background simply made see-through by brightness
-    videoTranslucent: "/assets/kerala-temple/characters/kathakali-troupe-translucent.mp4?v=1",
+    video: "/assets/kerala-temple/characters/kathakali-troupe.mp4?v=10",
+    videoAspect: 1890 / 920,
     depth: 678,
     parallax: 0,
     scale: 1,

@@ -63,7 +63,6 @@ export async function createWorld(canvas) {
 
     const material = new THREE.MeshBasicMaterial({
       map: texture,
-      alphaMap: plate.alphaMap ?? null,
       color: layer.shade ? new THREE.Color(layer.shade) : 0xffffff,
       transparent: true,
       alphaTest: 0.04,
@@ -71,6 +70,17 @@ export async function createWorld(canvas) {
       depthWrite: false,
       side: THREE.DoubleSide,
     });
+    if (plate.packedAlpha) {
+      // the video frame carries its own matte in the lower half: read alpha from the same
+      // texture (one upload per frame instead of two). Video textures are decoded to sRGB in the
+      // shader, so this raw sample is the matte value as encoded.
+      material.onBeforeCompile = (shader) => {
+        shader.fragmentShader = shader.fragmentShader.replace(
+          "#include <map_fragment>",
+          "#include <map_fragment>\n\tdiffuseColor.a *= texture2D( map, vec2( vMapUv.x, vMapUv.y - 0.5 ) ).g;",
+        );
+      };
+    }
 
     const geometry = new THREE.PlaneGeometry(1, 1);
     const mesh = new THREE.Mesh(geometry, material);
@@ -197,30 +207,6 @@ export async function createWorld(canvas) {
     },
     /** The scene's video elements (the troupe), for playback control. */
     videos,
-    /** Which version of the troupe is showing: "cutout" or "translucent". */
-    get troupeVersion() {
-      const video = videos[0];
-      return video && video.dataset.translucent && video.currentSrc === video.dataset.translucent ? "translucent" : "cutout";
-    },
-    /** Swap the troupe between its versions in place, keeping its spot in the loop. */
-    setTroupeVersion(kind) {
-      for (const video of videos) {
-        const next = video.dataset[kind];
-        if (!next || video.currentSrc === next) continue;
-        const wasPlaying = !video.paused;
-        const at = video.currentTime;
-        video.src = next;
-        video.load();
-        video.addEventListener(
-          "loadedmetadata",
-          () => {
-            video.currentTime = video.duration ? at % video.duration : 0;
-            if (wasPlaying) video.play().catch(() => {});
-          },
-          { once: true },
-        );
-      }
-    },
     /** Play the scene's videos only while they can be seen; they idle otherwise. */
     setVideosPlaying(on) {
       for (const video of videos) {
@@ -242,9 +228,9 @@ export async function createWorld(canvas) {
 
 /**
  * A looping, muted video whose frames stack colour (top half) over a greyscale cut-out
- * matte (bottom half). Two textures read the same element: one maps the top half as
- * colour, the other the bottom half as the alpha map, so the performers keep a clean
- * edge in every browser without needing a transparent video format.
+ * matte (bottom half). One texture maps the top half as colour and the material reads the
+ * bottom half as alpha, so the performers keep a clean edge in every browser without
+ * needing a transparent video format.
  */
 function videoPlate(layer) {
   const video = document.createElement("video");
@@ -254,31 +240,22 @@ function videoPlate(layer) {
   video.setAttribute("playsinline", "");
   video.preload = "auto";
   video.crossOrigin = "anonymous";
-  const url = (path) => (path.startsWith("/") ? import.meta.env.BASE_URL + path.slice(1) : path);
-  video.dataset.cutout = url(layer.video);
-  if (layer.videoTranslucent) video.dataset.translucent = url(layer.videoTranslucent);
-  const wanted = new URLSearchParams(location.search).get("troupe");
-  video.src = wanted === "translucent" && video.dataset.translucent ? video.dataset.translucent : video.dataset.cutout;
+  video.src = layer.video.startsWith("/") ? import.meta.env.BASE_URL + layer.video.slice(1) : layer.video;
 
   const texture = new THREE.VideoTexture(video);
   texture.colorSpace = THREE.SRGBColorSpace;
   texture.repeat.set(1, 0.5);
   texture.offset.set(0, 0.5);
 
-  const alphaMap = new THREE.VideoTexture(video);
-  alphaMap.repeat.set(1, 0.5);
-  alphaMap.offset.set(0, 0);
-
   // a paused video never reports new frames, so push the first (and any seeked-to) frame
   // up by hand — otherwise the troupe stays invisible until playback starts
   const refresh = () => {
     texture.needsUpdate = true;
-    alphaMap.needsUpdate = true;
   };
   video.addEventListener("loadeddata", refresh);
   video.addEventListener("seeked", refresh);
 
-  return { texture, alphaMap, video };
+  return { texture, packedAlpha: true, video };
 }
 
 function makeDoorOccluder(THREE, image, hole, geometry) {
