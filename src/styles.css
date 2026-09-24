@@ -1209,7 +1209,9 @@ html {
 .afterlight {
   pointer-events: auto;
   width: min(1810px, calc(100% - 2 * var(--pad)));
-  margin: 10vh auto 10vh;
+  /* far enough below the cards that, with the cards centred, Afterlight is still out of view —
+     so the foliage can frame the cards on any screen and has sunk away before this text arrives */
+  margin: max(10vh, calc((100svh - min(78vh, 788px)) / 2 + 56px)) auto 10vh;
   padding: clamp(28px, 5vh, 56px) clamp(20px, 3vw, 48px) clamp(32px, 6vh, 64px);
   border-top: 1px solid rgb(232 224 208 / 0.16);
   border-bottom: 1px solid rgb(232 224 208 / 0.06);
@@ -1280,6 +1282,10 @@ html {
 }
 
 @media (max-width: 900px) {
+  .afterlight {
+    margin-top: 10vh;
+  }
+
   .cards {
     grid-template-columns: 1fr;
     grid-template-rows: none;
