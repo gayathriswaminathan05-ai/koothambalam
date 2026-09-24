@@ -500,6 +500,48 @@ body {
   }
 }
 
+/* "Keep scrolling": appears when a visitor pauses partway along the walk. */
+.keep-cue {
+  position: fixed;
+  left: 50%;
+  bottom: calc(26px + env(safe-area-inset-bottom, 0px));
+  z-index: 54;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 0;
+  padding: 11px 18px 11px 20px;
+  border: 1px solid rgb(232 224 208 / 0.14);
+  border-radius: 999px;
+  background: rgb(5 9 12 / 0.62);
+  -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(8px);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.24em;
+  text-transform: uppercase;
+  color: var(--bone);
+  white-space: nowrap;
+  pointer-events: none;
+  opacity: 0;
+  transform: translate3d(-50%, 10px, 0);
+  transition:
+    opacity 0.6s var(--ease-out),
+    transform 0.6s var(--ease-out);
+}
+
+.keep-cue.is-visible {
+  opacity: 1;
+  transform: translate3d(-50%, 0, 0);
+}
+
+@media (max-width: 600px) {
+  /* sit above the sound toggle on narrow screens */
+  .keep-cue {
+    bottom: calc(80px + env(safe-area-inset-bottom, 0px));
+  }
+}
+
 /* Sound toggle for the troupe: appears once the performers are in view. */
 .sound-toggle {
   position: fixed;
@@ -802,7 +844,18 @@ body.scrolled .hero-cue {
   transition: color 0.4s, transform 0.5s var(--ease-out);
 }
 
-.chip:hover .chip-num {
+.chip[data-chapter] {
+  cursor: pointer;
+}
+
+.chip[data-chapter]:focus-visible {
+  outline: 1px solid var(--lamp);
+  outline-offset: 6px;
+  border-radius: 4px;
+}
+
+.chip:hover .chip-num,
+.chip:focus-visible .chip-num {
   color: var(--lamp);
   transform: translate3d(0, -2px, 0);
 }
@@ -852,6 +905,7 @@ body.scrolled .hero-cue {
 }
 
 body.still-shot .nav,
+body.still-shot .keep-cue,
 body.still-shot .sound-toggle,
 body.still-shot .fg,
 body.still-shot .hero,

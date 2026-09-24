@@ -16,6 +16,10 @@ if (new URLSearchParams(location.search).has("still")) {
 /** Walk progress at which the troupe starts to show through the gopuram doorway. */
 const TROUPE_VIDEO_FROM = 0.6;
 const TROUPE_SOUND_FROM = 0.72;
+/** Inside the courtyard: from here one full pass of the dance plays, then the cards come in. */
+const ARRIVE = 1.3;
+/** Where each home chapter number takes you along the walk. */
+const CHAPTER_PROGRESS = { "01": 0.3, "02": 0.66, "03": 1.0, "04": 1 + 0.4 };
 
 // Past the doorway the walk continues into the courtyard: progress runs 0 → 1 up to
 // the door (unchanged pacing) and on to 1 + EPILOGUE inside, where the whole troupe is in view.
@@ -98,8 +102,10 @@ function tick(time) {
   const follow = reduce.matches || lockProgress ? 1 : 1 - Math.exp(-dt * 14);
   current += (target - current) * follow;
   world.applyCamera(current, time);
-  world.setVideosPlaying(current > TROUPE_VIDEO_FROM);
+  dance?.update(current);
+  world.setVideosPlaying(current > TROUPE_VIDEO_FROM && !dance?.done);
   sound?.update(current);
+  keepCue?.update(current);
   world.render();
   applySky(current);
   applyAfter();
@@ -122,6 +128,7 @@ function mountTroupeSound() {
 
   const FULL = 0.85;
   let inView = false;
+  let finished = false;
   let userMuted = false;
   let blocked = false;
   let fadeRaf = 0;
@@ -149,7 +156,7 @@ function mountTroupeSound() {
   }
 
   function start() {
-    if (userMuted || !inView) return render();
+    if (userMuted || !inView || finished) return render();
     audio
       .play()
       .then(() => {
@@ -197,9 +204,140 @@ function mountTroupeSound() {
       if (show) start();
       else stop();
     },
+    /** The performance is over: let the drums fade out and stay quiet. */
+    finish() {
+      finished = true;
+      stop();
+    },
+    /** Back in the courtyard for another pass: sound may play again. */
+    resume() {
+      if (!finished) return;
+      finished = false;
+      audio.currentTime = 0;
+      start();
+    },
     destroy() {
       cancelAnimationFrame(fadeRaf);
       audio.pause();
+    },
+  };
+}
+
+/**
+ * One pass of the dance. The troupe loops seamlessly while you walk up to the doorway;
+ * once you're inside the courtyard, one full clip's worth of playing time is counted,
+ * then the sound fades and the page glides on to the cards. Walking back out resets it.
+ */
+function mountPerformance(video, sound) {
+  if (!video) return null;
+  const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
+  let arrived = false;
+  let played = 0;
+  let lastTime = 0;
+  const state = { done: false };
+
+  const clipLength = () => (Number.isFinite(video.duration) && video.duration > 0 ? video.duration : 3.7);
+
+  function advance() {
+    // only when the visitor is still standing at the end of the walk — never pull them back
+    const end = walkEnd();
+    const y = window.scrollY;
+    if (y < end * (ARRIVE / (1 + EPILOGUE)) - 2 || y > end + window.innerHeight * 0.3) return;
+    document.getElementById("cards")?.scrollIntoView({
+      block: "center",
+      behavior: reduceMotion.matches ? "auto" : "smooth",
+    });
+  }
+
+  video.addEventListener("timeupdate", () => {
+    const t = video.currentTime;
+    if (arrived && !state.done) {
+      const length = clipLength();
+      const step = t >= lastTime ? t - lastTime : t + (length - lastTime); // wrapped round the loop
+      played += Math.min(Math.max(step, 0), 1);
+      if (played >= length) {
+        state.done = true;
+        video.pause();
+        sound?.finish();
+        advance();
+      }
+    }
+    lastTime = t;
+  });
+
+  return {
+    get done() {
+      return state.done;
+    },
+    update(progress) {
+      if (!arrived && progress >= ARRIVE) {
+        arrived = true;
+        played = 0;
+        lastTime = video.currentTime;
+      } else if (arrived && progress < ARRIVE - 0.05) {
+        arrived = false;
+        if (state.done) {
+          state.done = false;
+          sound?.resume();
+        }
+      }
+    },
+  };
+}
+
+/** The home chapter numbers jump to their stretch of the walk. */
+function mountChapters() {
+  const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
+  for (const chip of document.querySelectorAll(".chip[data-chapter]")) {
+    const go = () => {
+      const target = CHAPTER_PROGRESS[chip.dataset.chapter];
+      if (target == null) return;
+      const end = walkEnd() / (1 + EPILOGUE);
+      window.scrollTo({ top: target * end, behavior: reduceMotion.matches ? "auto" : "smooth" });
+    };
+    chip.addEventListener("click", go);
+    chip.addEventListener("keydown", (event) => {
+      if (event.key === "Enter" || event.key === " ") {
+        event.preventDefault();
+        go();
+      }
+    });
+  }
+}
+
+/** "Keep scrolling" appears when a visitor pauses partway along the walk. */
+function mountKeepScrolling() {
+  const el = document.getElementById("keep-cue");
+  if (!el) return null;
+  const IDLE_MS = 2200;
+  let lastScroll = performance.now();
+  let progress = 0;
+  let timer = 0;
+
+  const eligible = () => window.scrollY > 40 && progress < ARRIVE;
+  const hide = () => el.classList.remove("is-visible");
+  const arm = () => {
+    clearTimeout(timer);
+    timer = setTimeout(() => {
+      if (eligible() && performance.now() - lastScroll >= IDLE_MS - 50) el.classList.add("is-visible");
+    }, IDLE_MS);
+  };
+
+  window.addEventListener(
+    "scroll",
+    () => {
+      lastScroll = performance.now();
+      hide();
+      arm();
+    },
+    { passive: true },
+  );
+  arm();
+
+  return {
+    update(p) {
+      progress = p;
+      if (!eligible()) hide();
     },
   };
 }
@@ -237,6 +375,9 @@ function mountCursor() {
 const cloth = mountClothCards();
 const cursor = mountCursor();
 const sound = mountTroupeSound();
+const dance = mountPerformance(world.videos?.[0], sound);
+const keepCue = mountKeepScrolling();
+mountChapters();
 
 tick(performance.now());
 

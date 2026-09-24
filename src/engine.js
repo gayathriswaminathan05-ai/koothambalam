@@ -195,6 +195,8 @@ export async function createWorld(canvas) {
     render() {
       renderer.render(scene, camera);
     },
+    /** The scene's video elements (the troupe), for playback control. */
+    videos,
     /** Play the scene's videos only while they can be seen; they idle otherwise. */
     setVideosPlaying(on) {
       for (const video of videos) {
@@ -238,6 +240,15 @@ function videoPlate(layer) {
   const alphaMap = new THREE.VideoTexture(video);
   alphaMap.repeat.set(1, 0.5);
   alphaMap.offset.set(0, 0);
+
+  // a paused video never reports new frames, so push the first (and any seeked-to) frame
+  // up by hand — otherwise the troupe stays invisible until playback starts
+  const refresh = () => {
+    texture.needsUpdate = true;
+    alphaMap.needsUpdate = true;
+  };
+  video.addEventListener("loadeddata", refresh);
+  video.addEventListener("seeked", refresh);
 
   return { texture, alphaMap, video };
 }

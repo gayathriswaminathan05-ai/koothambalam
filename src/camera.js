@@ -5,7 +5,9 @@
  * scroll moves the camera. Opening look stays on the temple so the
  * moon sits behind the gopuram.
  *
- * Interpolation is a Catmull-Rom spline on a single global smoothstep.
+ * Interpolation is a monotone cubic through the keyframes: smooth, but it never
+ * overshoots a key, so the camera can't drift backwards between two close ones
+ * (a Catmull-Rom here made the doorway ease back and forth near the threshold).
  */
 
 function clamp01(t) {
@@ -21,22 +23,34 @@ function lerp(a, b, t) {
   return a + (b - a) * t;
 }
 
-function catmull(p0, p1, p2, p3, t) {
-  const t2 = t * t;
-  const t3 = t2 * t;
-  return 0.5 * ((2 * p1) + (-p0 + p2) * t + (2 * p0 - 5 * p1 + 4 * p2 - p3) * t2 + (-p0 + 3 * p1 - 3 * p2 + p3) * t3);
+/** Fritsch–Butland tangent at an interior key: zero at a turning point, otherwise a
+ * weighted harmonic mean of the two neighbouring slopes — which keeps each span monotone. */
+function tangent(prev, cur, next) {
+  const h0 = cur.t - prev.t;
+  const h1 = next.t - cur.t;
+  return (key) => {
+    const d0 = (cur[key] - prev[key]) / h0;
+    const d1 = (next[key] - cur[key]) / h1;
+    if (d0 * d1 <= 0) return 0;
+    return (3 * (h0 + h1)) / ((2 * h1 + h0) / d0 + (h1 + 2 * h0) / d1);
+  };
+}
+
+function hermite(v0, v1, m0, m1, h, s) {
+  const s2 = s * s;
+  const s3 = s2 * s;
+  return (2 * s3 - 3 * s2 + 1) * v0 + (s3 - 2 * s2 + s) * h * m0 + (-2 * s3 + 3 * s2) * v1 + (s3 - s2) * h * m1;
 }
 
 const KEYS = ["x", "y", "z", "lookX", "lookY", "lookZ", "fov"];
 
 /** How far past the door (as a share of the door → yard distance) the epilogue ends:
- * just over the threshold, so the gopuram frame drops away without closing in on the troupe. */
+ * just over the threshold, so the gopuram frame drops away. */
 const INSIDE = 0.05;
-/** Lens once inside: wide enough to take in the whole troupe on a landscape screen.
- * Portrait screens widen less — the full circle can't fit a phone at a readable size,
- * and a wider lens would run past the courtyard floor. */
+/** Lens once inside: about 70% of the troupe in frame — the dancers large, the outer
+ * ring of musicians and audience running off the edges. */
 function fovInside(aspect) {
-  return aspect >= 1 ? 54 : 50;
+  return aspect >= 1 ? 38 : 46;
 }
 
 function path(door, yard, aspect) {
@@ -57,8 +71,8 @@ function path(door, yard, aspect) {
     { t: 0.9, x, y: d.y + 0.03, z: d.z + 3.6, lookX: x, lookY: lerp(d.y, y.y, 0.25), lookZ: y.z, fov: 34 },
     { t: 1, x, y: lerp(d.y, y.y, 0.45), z: d.z + 3.4, lookX: x, lookY: y.y, lookZ: y.z, fov: 36 },
     // epilogue: step through the doorway (the gopuram plate drops away as it's passed)
-    // and settle where the whole troupe sits inside the frame
-    { t: 1.2, x, y: lerp(d.y, y.y, 0.55), z: lerp(d.z, y.z, INSIDE * 0.6), lookX: x, lookY: y.y, lookZ: y.z, fov: 44 },
+    // and settle on the performance
+    { t: 1.2, x, y: lerp(d.y, y.y, 0.55), z: lerp(d.z, y.z, INSIDE * 0.6), lookX: x, lookY: y.y, lookZ: y.z, fov: lerp(36, FOV_INSIDE, 0.5) },
     { t: 1.4, x, y: lerp(d.y, y.y, 0.6) - 0.2 * TILT, z: lerp(d.z, y.z, INSIDE), lookX: x, lookY: y.y - 0.55 * TILT, lookZ: y.z, fov: FOV_INSIDE },
   ];
 }
@@ -83,13 +97,16 @@ export function getCameraState(progress, targets = {}, aspect = 1.6) {
 
   const a = frames[i];
   const b = frames[i + 1];
-  const local = clamp01((p - a.t) / (b.t - a.t || 1));
-  const p0 = frames[Math.max(0, i - 1)];
-  const p3 = frames[Math.min(frames.length - 1, i + 2)];
+  const h = b.t - a.t || 1;
+  const local = clamp01((p - a.t) / h);
+  const last = frames.length - 1;
+  // end keys hold still (zero slope) so the walk eases in and out
+  const ma = i > 0 ? tangent(frames[i - 1], a, b) : () => 0;
+  const mb = i + 1 < last ? tangent(a, b, frames[i + 2]) : () => 0;
 
   const shot = {};
   for (const key of KEYS) {
-    shot[key] = catmull(p0[key], a[key], b[key], p3[key], local);
+    shot[key] = hermite(a[key], b[key], ma(key), mb(key), h, local);
   }
   return shot;
 }
