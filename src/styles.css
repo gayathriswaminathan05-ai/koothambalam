@@ -511,6 +511,91 @@ body {
   }
 }
 
+/* Chapter titles along the walk (02-04), after Kage's section heads: a small-caps line —
+   number in lamp amber, name, a rule, the Malayalam — over one display line. Opacity and
+   lift are driven by scroll progress from main.js. */
+.scene-titles {
+  position: fixed;
+  top: calc(var(--nav-h) + env(safe-area-inset-top, 0px) + clamp(18px, 5vh, 56px));
+  left: calc(var(--pad) + env(safe-area-inset-left, 0px));
+  z-index: 6;
+  width: min(620px, calc(100% - 2 * var(--pad)));
+  pointer-events: none;
+}
+
+.scene-title {
+  position: absolute;
+  top: 0;
+  left: 0;
+  isolation: isolate;
+  opacity: 0;
+  will-change: opacity, transform;
+}
+
+/* the same soft pool of shade as behind the hero heading */
+.scene-title::before {
+  content: "";
+  position: absolute;
+  inset: -48px -80px -56px calc(-1 * var(--pad) - 40px);
+  z-index: -1;
+  background: radial-gradient(ellipse 70% 62% at 38% 50%, rgb(5 9 12 / 0.5), rgb(5 9 12 / 0.28) 45%, rgb(5 9 12 / 0) 100%);
+}
+
+.scene-head {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin: 0 0 14px;
+}
+
+.scene-head .k {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.24em;
+  text-transform: uppercase;
+  color: var(--bone-dim);
+  text-shadow: 0 1px 12px rgb(7 16 24 / 0.9);
+  white-space: nowrap;
+}
+
+.scene-head .k b {
+  font-weight: 600;
+  color: var(--lamp);
+}
+
+.scene-head .k[lang="ml"] {
+  font-size: 13px;
+  letter-spacing: 0.1em;
+  text-transform: none;
+}
+
+.scene-head .rule {
+  width: 48px;
+  height: 1px;
+  background: rgb(232 224 208 / 0.35);
+}
+
+.scene-line {
+  max-width: 18ch;
+  margin: 0;
+  font-size: clamp(26px, 3.2vw, 50px);
+  font-weight: 300;
+  line-height: 1.12;
+  letter-spacing: -0.01em;
+  color: var(--bone);
+  text-shadow: 0 2px 28px rgb(7 16 24 / 0.9);
+}
+
+@media (max-width: 600px) {
+  .scene-head .rule {
+    width: 28px;
+  }
+
+  .scene-line {
+    font-size: 26px;
+  }
+}
+
 /* "Keep scrolling": appears when a visitor pauses partway along the walk. */
 .keep-cue {
   position: fixed;
@@ -921,6 +1006,7 @@ body.scrolled .hero-cue {
 }
 
 body.still-shot .nav,
+body.still-shot .scene-titles,
 body.still-shot .keep-cue,
 body.still-shot .sound-toggle,
 body.still-shot .fg,

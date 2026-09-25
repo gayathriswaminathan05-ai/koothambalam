@@ -17,7 +17,12 @@ function frustumAt(z, aspect, fromZ = REF.z, fov = REF.fov) {
   return { width: height * aspect, height };
 }
 
-export async function createWorld(canvas) {
+/**
+ * @param {HTMLCanvasElement} canvas
+ * @param {{ onProgress?: (loaded: number, total: number) => void }} [options]
+ *   onProgress fires as each scene layer finishes loading (drives the loading screen).
+ */
+export async function createWorld(canvas, { onProgress } = {}) {
   const reduce = window.matchMedia("(prefers-reduced-motion: reduce)");
   const renderer = new THREE.WebGLRenderer({
     canvas,
@@ -44,14 +49,21 @@ export async function createWorld(canvas) {
 
   // Fetch every layer at once; waiting on each in turn left the hero dark for the sum of all downloads.
   // A video layer isn't awaited: its plate stays invisible until the first frame decodes.
+  let layersLoaded = 0;
+  const layerDone = (plate) => {
+    onProgress?.(++layersLoaded, stack.length);
+    return plate;
+  };
   const plates = await Promise.all(
     stack.map((layer) =>
       layer.video
-        ? videoPlate(layer)
-        : loadTexture(THREE, layer.src).then(
-            (loaded) => ({ texture: loaded.texture }),
-            () => null,
-          ),
+        ? layerDone(videoPlate(layer))
+        : loadTexture(THREE, layer.src)
+            .then(
+              (loaded) => ({ texture: loaded.texture }),
+              () => null,
+            )
+            .then(layerDone),
     ),
   );
   const videos = plates.filter((plate) => plate?.video).map((plate) => plate.video);

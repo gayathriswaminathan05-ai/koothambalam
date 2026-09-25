@@ -3,17 +3,37 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-    <!-- Hold the page on the night colour until the scene has drawn its first frame, then reveal
-         it all at once (main.js removes "booting"). The timeout is a failsafe: content can
-         never stay hidden, and without JavaScript nothing is hidden at all. -->
+    <!-- Loading screen (after Kage's preloader): painted from the first frame, above everything,
+         lifted by main.js once the scene has drawn. The timeout is a failsafe so it can never
+         stay up, and without JavaScript it isn't shown at all. -->
     <style>
-      html { background: #071018; }
-      html.booting body { opacity: 0; }
-      body { transition: opacity 0.7s cubic-bezier(0.23, 1, 0.32, 1); }
+      html { background: #05070a; }
+      html.is-loading, html.is-loading body { overflow: hidden; }
+      #pre {
+        position: fixed; inset: 0; z-index: 100;
+        display: flex; align-items: center; justify-content: center;
+        background: #05070a;
+        transition: opacity 0.8s cubic-bezier(0.23, 1, 0.32, 1), visibility 0.8s;
+      }
+      #pre.done { opacity: 0; visibility: hidden; pointer-events: none; }
+      .pre-in { width: min(420px, 74vw); text-align: center; font-family: Onest, system-ui, sans-serif; }
+      .pre-mark { display: block; width: 44px; height: 44px; margin: 0 auto 26px; opacity: 0.9; animation: pre-breathe 2.6s ease-in-out infinite; }
+      .pre-ml { margin: 0 0 20px; font-size: 13px; letter-spacing: 0.35em; color: #9a9080; }
+      .pre-bar { position: relative; height: 1px; overflow: hidden; background: rgb(232 224 208 / 0.14); }
+      .pre-bar i { position: absolute; inset: 0 100% 0 0; background: #e8e0d0; transition: right 0.35s linear; }
+      .pre-meta { display: flex; justify-content: space-between; margin-top: 12px; font-size: 10px; letter-spacing: 0.2em; text-transform: uppercase; color: #6e675c; }
+      .pre-meta b { font-weight: 600; color: #9a9080; font-variant-numeric: tabular-nums; }
+      @keyframes pre-breathe { 50% { opacity: 0.55; } }
+      @media (prefers-reduced-motion: reduce) { .pre-mark { animation: none; } }
     </style>
+    <noscript><style>#pre { display: none; } html.is-loading, html.is-loading body { overflow: visible; }</style></noscript>
     <script>
-      document.documentElement.classList.add("booting");
-      setTimeout(function () { document.documentElement.classList.remove("booting"); }, 6000);
+      document.documentElement.classList.add("is-loading");
+      setTimeout(function () {
+        document.documentElement.classList.remove("is-loading");
+        var pre = document.getElementById("pre");
+        if (pre) pre.classList.add("done");
+      }, 8000);
     </script>
     <title>KOOTHAMBALAM - SACRED SPACES OF KERALA</title>
     <meta name="apple-mobile-web-app-title" content="Koothambalam" />
@@ -30,6 +50,14 @@
     <link rel="preload" as="image" href="/assets/kerala-temple/background/moon.webp?v=5" />
   </head>
   <body id="top">
+    <div id="pre" role="progressbar" aria-label="Loading" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
+      <div class="pre-in">
+        <img class="pre-mark" src="/assets/kerala-temple/ui/mark.svg" alt="" width="44" height="44" />
+        <p class="pre-ml" lang="ml">കൂത്തമ്പലം</p>
+        <div class="pre-bar"><i id="pre-fill"></i></div>
+        <div class="pre-meta"><span>Lighting the temple lamps</span><b><span id="pre-pct">0</span>%</b></div>
+      </div>
+    </div>
     <div class="sky-clouds" aria-hidden="true">
       <canvas id="clouds-source"></canvas>
       <div id="clouds-content"></div>
@@ -88,6 +116,21 @@
           </ol>
         </div>
       </section>
+    </div>
+    <!-- chapter titles for the walk, after Kage's section heads; they fade with the scroll -->
+    <div class="scene-titles" aria-hidden="true">
+      <div class="scene-title" data-from="0.52" data-to="0.84">
+        <p class="scene-head"><span class="k"><b>02</b> — Gopuram</span><span class="rule"></span><span class="k" lang="ml">ഗോപുരം</span></p>
+        <p class="scene-line">The gateway into sacred ground.</p>
+      </div>
+      <div class="scene-title" data-from="0.88" data-to="1.24">
+        <p class="scene-head"><span class="k"><b>03</b> — Kathakali</span><span class="rule"></span><span class="k" lang="ml">കഥകളി</span></p>
+        <p class="scene-line">Stories of gods and goddesses, danced till dawn.</p>
+      </div>
+      <div class="scene-title" data-from="1.27" data-to="9">
+        <p class="scene-head"><span class="k"><b>04</b> — Rangam</span><span class="rule"></span><span class="k" lang="ml">രംഗം</span></p>
+        <p class="scene-line">Where dance is offered as devotion.</p>
+      </div>
     </div>
     <div class="cur-dot" id="cursor" aria-hidden="true"></div>
     <p class="keep-cue" id="keep-cue" aria-hidden="true"><span>Keep scrolling</span><span class="hero-cue-track"><i></i></span></p>

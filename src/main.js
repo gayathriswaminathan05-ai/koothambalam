@@ -37,29 +37,65 @@ function scrollProgress() {
   return Math.min(max, Math.max(0, window.scrollY / end));
 }
 
-// Everything is revealed together once the scene has drawn (see the "booting" class in
-// index.html): fonts and the moon get a short head start so nothing pops in after the fade.
+// Loading screen (#pre in index.html, after Kage's): the bar follows the real work — the scene's
+// image layers, the fonts, the moon, then the first drawn frame — and lifts once all are done.
+const loader = mountLoader();
 const pageReady = Promise.race([
   Promise.all([
-    document.fonts?.ready,
-    document.querySelector(".sky-moon")?.decode?.().catch(() => {}),
+    document.fonts?.ready.then(() => loader.set("fonts", 1)),
+    document
+      .querySelector(".sky-moon")
+      ?.decode?.()
+      .catch(() => {})
+      .then(() => loader.set("moon", 1)),
   ]),
-  new Promise((resolve) => setTimeout(resolve, 1200)),
+  new Promise((resolve) => setTimeout(resolve, 1500)),
 ]);
 let revealed = false;
 function reveal() {
   if (revealed) return;
   revealed = true;
-  pageReady.then(() =>
-    requestAnimationFrame(() => {
-      document.documentElement.classList.remove("booting");
-      performance.mark("page-revealed");
-    }),
-  );
+  loader.set("frame", 1);
+  pageReady.then(() => loader.finish());
+}
+
+function mountLoader() {
+  const pre = document.getElementById("pre");
+  const fill = document.getElementById("pre-fill");
+  const pct = document.getElementById("pre-pct");
+  const MIN_SHOWN_MS = 1100; // long enough for the bar to read, even from cache
+  const weights = { layers: 0.7, fonts: 0.1, moon: 0.1, frame: 0.1 };
+  const parts = { layers: 0, fonts: 0, moon: 0, frame: 0 };
+  let shown = 0;
+
+  function draw(p) {
+    shown = Math.max(shown, p); // never runs backwards
+    if (fill) fill.style.right = `${((1 - shown) * 100).toFixed(1)}%`;
+    if (pct) pct.textContent = String(Math.round(shown * 100));
+    pre?.setAttribute("aria-valuenow", String(Math.round(shown * 100)));
+  }
+
+  return {
+    set(part, amount) {
+      parts[part] = Math.min(1, amount);
+      // hold back the last few percent for the lift itself
+      draw(Math.min(0.96, Object.keys(parts).reduce((sum, k) => sum + parts[k] * weights[k], 0)));
+    },
+    finish() {
+      draw(1);
+      const wait = Math.max(0, MIN_SHOWN_MS - performance.now()) + 280;
+      setTimeout(() => {
+        pre?.classList.add("done");
+        document.documentElement.classList.remove("is-loading");
+        performance.mark("page-revealed");
+        setTimeout(() => pre?.remove(), 900);
+      }, wait);
+    },
+  };
 }
 
 const sky = mountSkyClouds();
-const world = await createWorld(canvas);
+const world = await createWorld(canvas, { onProgress: (loaded, total) => loader.set("layers", loaded / total) });
 const backdrop = document.querySelector(".sky-clouds");
 const moonWrap = document.querySelector(".sky-moon-wrap");
 const cloudOutput = document.querySelector("#clouds-output");
@@ -127,6 +163,7 @@ function tick(time) {
   world.setVideosPlaying(current > TROUPE_VIDEO_FROM && !dance?.done);
   sound?.update(current);
   keepCue?.update(current);
+  sceneTitles?.update(current);
   world.render();
   reveal(); // the first frame is drawn: fade the whole page in
   applySky(current);
@@ -399,6 +436,39 @@ function mountChapters() {
   }
 }
 
+/**
+ * Chapter titles for the walk (02 Gopuram, 03 Kathakali, 04 Rangam). Each fades and lifts in
+ * over its stretch of progress (data-from → data-to) and out again, and all of them clear
+ * once the page scrolls past the walk into the cards.
+ */
+function mountSceneTitles() {
+  const titles = [...document.querySelectorAll(".scene-title")].map((el) => ({
+    el,
+    from: Number(el.dataset.from),
+    to: Number(el.dataset.to),
+    last: -1,
+  }));
+  if (!titles.length) return null;
+  const FADE = 0.05; // in walk progress
+  const ease = (t) => t * t * (3 - 2 * t);
+  return {
+    update(progress) {
+      // past the end of the walk the progress holds at its maximum; fade out by scroll instead
+      const beyond = (window.scrollY - walkEnd()) / (window.innerHeight * 0.2);
+      const inWalk = 1 - Math.min(1, Math.max(0, beyond));
+      for (const t of titles) {
+        const into = Math.min(1, Math.max(0, (progress - t.from) / FADE));
+        const outOf = Math.min(1, Math.max(0, (t.to - progress) / FADE));
+        const o = ease(Math.min(into, outOf)) * inWalk;
+        if (Math.abs(o - t.last) < 0.002) continue;
+        t.last = o;
+        t.el.style.opacity = o.toFixed(3);
+        t.el.style.transform = `translate3d(0, ${((1 - o) * 14).toFixed(1)}px, 0)`;
+      }
+    },
+  };
+}
+
 /** "Keep scrolling" appears when a visitor pauses partway along the walk. */
 function mountKeepScrolling() {
   const el = document.getElementById("keep-cue");
@@ -471,6 +541,7 @@ const cursor = mountCursor();
 const sound = mountSound();
 const dance = mountPerformance(world.videos?.[0], sound);
 const keepCue = mountKeepScrolling();
+const sceneTitles = mountSceneTitles();
 mountChapters();
 
 tick(performance.now());
