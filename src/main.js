@@ -584,7 +584,7 @@ function mountForeground() {
     } else {
       fg.classList.remove("fg-active");
       fg.classList.add("fg-retiring");
-      retire = setTimeout(() => fg.classList.remove("fg-retiring"), 900);
+      retire = setTimeout(() => fg.classList.remove("fg-retiring"), 1450);
     }
   }
 

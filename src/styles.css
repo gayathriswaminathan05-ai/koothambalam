@@ -449,14 +449,21 @@ body {
   --fg-delay: 90ms;
 }
 
+/* leaving mirrors arriving: each piece slides back out towards the edge it came from,
+   the movement leading and the fade following, rather than dissolving on the spot */
 .fg.fg-retiring .fg-el {
   opacity: 0;
-  transform: translate3d(0, 8vh, 0) scale(0.98);
-  filter: blur(18px);
   transition:
-    opacity 0.68s var(--ease-out),
-    transform 0.78s var(--ease-out),
-    filter 0.78s var(--ease-out);
+    opacity 0.9s cubic-bezier(0.4, 0, 0.6, 1) 0.3s,
+    transform 1.3s cubic-bezier(0.45, 0, 0.55, 1);
+}
+
+.fg.fg-retiring [data-fg-in="left"] {
+  transform: translate3d(-34%, 5%, 0);
+}
+
+.fg.fg-retiring [data-fg-in="right"] {
+  transform: translate3d(34%, 5%, 0);
 }
 
 /* the bush banks the lower-left corner, the jackfruit tree leans in from the right */
