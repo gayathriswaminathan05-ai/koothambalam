@@ -12,6 +12,10 @@ const lockProgress = rawP != null && Number.isFinite(forced);
 if (new URLSearchParams(location.search).has("still")) {
   document.body.classList.add("still-shot");
 }
+// ?share: the home screen as it's captured for link previews (no cursor ring or sound pill)
+if (new URLSearchParams(location.search).has("share")) {
+  document.body.classList.add("share-shot");
+}
 
 /** Walk progress at which the troupe starts to show through the gopuram doorway. */
 const TROUPE_VIDEO_FROM = 0.6;

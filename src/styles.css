@@ -1005,6 +1005,9 @@ body.scrolled .hero-cue {
   }
 }
 
+body.share-shot .cur-dot,
+body.share-shot .sound-toggle,
+body.share-shot .keep-cue,
 body.still-shot .nav,
 body.still-shot .scene-titles,
 body.still-shot .keep-cue,
