@@ -230,8 +230,8 @@ export const sceneLayers = [
     src: "/assets/kerala-temple/characters/kathakali-troupe-hq.webp?v=2",
     // Looping performance: colour in the top half of each frame, its cut-out matte in the
     // bottom half (see videoPlate in engine.js). Replaces the still once it can play.
-    video: "/assets/kerala-temple/characters/kathakali-troupe.mp4?v=10",
-    videoAspect: 1890 / 920,
+    video: "/assets/kerala-temple/characters/kathakali-troupe.mp4?v=12",
+    videoAspect: 1280 / 624,
     depth: 678,
     parallax: 0,
     scale: 1,
