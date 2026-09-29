@@ -221,6 +221,62 @@ body {
   text-decoration: none;
 }
 
+/* The two versions of the site: this illustrated one and the real-time 3D one. */
+.mode {
+  display: flex;
+  flex: none;
+  gap: 2px;
+  padding: 3px;
+  border: 1px solid rgb(232 224 208 / 0.16);
+  border-radius: 999px;
+  background: rgb(5 9 12 / 0.5);
+  -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(8px);
+}
+
+.mode a {
+  padding: 6px 11px;
+  border-radius: 999px;
+  font-size: 10px;
+  font-weight: 600;
+  line-height: 1;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--bone-dim);
+  text-decoration: none;
+  transition: color 0.3s, background-color 0.3s;
+}
+
+.mode a:hover,
+.mode a:focus-visible {
+  color: var(--bone);
+}
+
+.mode a:focus-visible {
+  outline: 1px solid var(--lamp);
+  outline-offset: 2px;
+}
+
+.mode a[aria-current="page"] {
+  background: var(--bone);
+  color: #0a0d10;
+}
+
+/* phones: the switch moves into the menu sheet */
+.nav-link.nav-mode {
+  display: none;
+}
+
+@media (max-width: 600px) {
+  .mode {
+    display: none;
+  }
+
+  .nav-link.nav-mode {
+    display: block;
+  }
+}
+
 .nav-links {
   display: flex;
   gap: clamp(18px, 2.6vw, 46px);
